@@ -308,7 +308,7 @@ export default function GamePage() {
     roundKingId, kittyPickedUp, stagedCards, kittyCards, isKittyPhase,
     handCards, handInitialized, roundResult, playerRanks, kittySize,
     declaredJokerRank, throwError, trickPhase, currentTurn, trickPlays,
-    trickComplete, trickNum, playerPoints, log,
+    trickComplete, playerPoints, log,
   } = state;
 
   // Dealing animation state (kept as useState — mutated inside setInterval)
