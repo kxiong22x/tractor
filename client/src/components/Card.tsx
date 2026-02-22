@@ -44,7 +44,7 @@ export default function Card({ card, faceUp, size = 'normal', selected = false, 
 
   // Joker cards use full image
   if (suit === 'J') {
-    const src = rank === 'B' ? '/red_joker.png' : '/black_joker.png';
+    const src = `${import.meta.env.BASE_URL}${rank === 'B' ? 'red_joker.png' : 'black_joker.png'}`;
     return (
       <div
         style={{

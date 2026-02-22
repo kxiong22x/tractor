@@ -3,7 +3,8 @@ interface RoomHeaderProps {
 }
 
 export default function RoomHeader({ roomId }: RoomHeaderProps) {
-  const shareUrl = `${window.location.origin}/room/${roomId}`;
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+  const shareUrl = `${window.location.origin}${basePath}/room/${roomId}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shareUrl);
