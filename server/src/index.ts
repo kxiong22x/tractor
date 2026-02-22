@@ -8,20 +8,22 @@ import { registerSocketHandlers } from './socket/handler';
 const app = express();
 const httpServer = createServer(app);
 
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173';
+
 const io = new Server(httpServer, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: CLIENT_ORIGIN,
     methods: ['GET', 'POST'],
   },
 });
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({ origin: CLIENT_ORIGIN }));
 app.use(express.json());
 app.use('/api', roomRoutes);
 
 registerSocketHandlers(io);
 
-const PORT = 3001;
+const PORT = Number(process.env.PORT) || 3001;
 httpServer.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

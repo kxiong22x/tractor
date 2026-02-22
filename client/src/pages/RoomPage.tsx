@@ -5,6 +5,7 @@ import type { Player } from '../types';
 import PlayerForm from '../components/PlayerForm';
 import PlayerList from '../components/PlayerList';
 import RoomHeader from '../components/RoomHeader';
+import { API_BASE_URL } from '../config';
 
 // ── State & Action types ──────────────────────────────────────────────
 
@@ -61,7 +62,7 @@ export default function RoomPage() {
 
   useEffect(() => {
     // Fetch initial room data
-    fetch(`http://localhost:3001/api/rooms/${roomId}`)
+    fetch(`${API_BASE_URL}/api/rooms/${roomId}`)
       .then((res) => {
         if (!res.ok) throw new Error('Room not found');
         return res.json();

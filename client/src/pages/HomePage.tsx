@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../config';
 
 export default function HomePage() {
   const navigate = useNavigate();
 
   const handleCreateRoom = async () => {
-    const res = await fetch('http://localhost:3001/api/rooms', {
+    const res = await fetch(`${API_BASE_URL}/api/rooms`, {
       method: 'POST',
     });
     const data = await res.json();
