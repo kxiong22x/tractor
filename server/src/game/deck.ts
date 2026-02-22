@@ -1,5 +1,4 @@
-const SUITS = ['S', 'H', 'D', 'C'] as const;
-const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'] as const;
+import { SUITS, RANKS } from '../constants';
 
 /** Returns kitty size: 6 for 6 players, 8 otherwise. */
 export function getKittySize(numPlayers: number): number {

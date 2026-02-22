@@ -32,11 +32,6 @@ export default function TrumpInfo({ trumpNumber, trumpSuit, trickPhase, trickNum
         <span style={{ color: (trumpSuit === 'H' || trumpSuit === 'D') ? '#ff6b6b' : 'white' }}>
           {trumpSuitDisplay}
         </span>
-        {trickPhase && (
-          <span style={{ fontSize: '0.8125rem', opacity: 0.8 }}>
-            Trick #{trickNum}
-          </span>
-        )}
       </div>
       {trickPhase && (
         <div style={{ fontSize: '0.8125rem' }}>

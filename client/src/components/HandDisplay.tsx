@@ -77,7 +77,7 @@ export default function HandDisplay({ displayHand, stagedCards, isKittyPhase, is
                 key={`${card}-${rowIdx}-${i}`}
                 className="hand-card"
                 style={{
-                  marginLeft: i === 0 ? '0' : '-1.25rem',
+                  marginLeft: i === 0 ? '0' : '-1.75rem',
                   marginTop: clickable || staged ? '-0.9375rem' : '0',
                   cursor: clickable ? 'pointer' : 'default',
                   transition: 'margin-top 0.2s',

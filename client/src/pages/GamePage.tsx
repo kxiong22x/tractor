@@ -9,6 +9,7 @@ import RoundOverModal from '../components/RoundOverModal';
 import ThrowError from '../components/ThrowError';
 import TrickCompleteOverlay from '../components/TrickCompleteOverlay';
 import HandDisplay from '../components/HandDisplay';
+import GameLog, { type LogEntry } from '../components/GameLog';
 import { parseCard, sortHand } from '../utils/cards';
 import { cardsDealtForPlayer, getPositionOrder } from '../utils/player';
 
@@ -39,6 +40,7 @@ interface GameState {
     nextKingId: string;
     winningTeam: 'attacking' | 'defending';
     kittyBonus: number;
+    gameOver: boolean;
   } | null;
   playerRanks: Record<string, number>;
   kittySize: number;
@@ -52,6 +54,7 @@ interface GameState {
   trickPlayerOrder: string[];
   leaderCardCount: number;
   playerPoints: Record<string, number>;
+  log: LogEntry[];
 }
 
 type GameAction =
@@ -65,7 +68,7 @@ type GameAction =
   | { type: 'PLAY_ERROR' }
   | { type: 'THROW_FAILED'; message: string }
   | { type: 'CLEAR_THROW_ERROR' }
-  | { type: 'ROUND_OVER'; attackingPoints: number; defendingPoints: number; rankChanges: Record<string, { oldRank: number; newRank: number }>; nextKingId: string; winningTeam: 'attacking' | 'defending'; kittyBonus: number }
+  | { type: 'ROUND_OVER'; attackingPoints: number; defendingPoints: number; rankChanges: Record<string, { oldRank: number; newRank: number }>; nextKingId: string; winningTeam: 'attacking' | 'defending'; kittyBonus: number; gameOver: boolean }
   | { type: 'GAME_STARTED'; gameId: string; players: GamePlayer[]; trumpNumber: string; trumpSuit: string; roundKingId: string | null; kittySize?: number }
   | { type: 'STAGE_CARD'; card: string }
   | { type: 'UNSTAGE_CARD'; card: string }
@@ -114,6 +117,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         trickPlayerOrder: action.playerOrder,
         stagedCards: [],
         leaderCardCount: 0,
+        log: [...state.log, { type: 'trick', trickNum: action.trickNum }],
       };
 
     case 'CARDS_PLAYED': {
@@ -122,11 +126,13 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const newHand = action.playerId === action.currentPlayerId
         ? state.handCards.filter(c => !action.cards.includes(c))
         : state.handCards;
+      const playerName = state.players.find(p => p.player_id === action.playerId)?.display_name ?? action.playerId;
       return {
         ...state,
         trickPlays: newPlays,
         leaderCardCount: newLeaderCount,
         handCards: newHand,
+        log: [...state.log, { type: 'play', playerName, cards: action.cards }],
       };
     }
 
@@ -135,11 +141,13 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'TRICK_COMPLETE': {
       const winner = state.players.find(p => p.player_id === action.winnerId);
+      const winnerName = winner?.display_name ?? 'Unknown';
       return {
         ...state,
-        trickComplete: { winnerId: action.winnerId, winnerName: winner?.display_name ?? 'Unknown' },
+        trickComplete: { winnerId: action.winnerId, winnerName },
         currentTurn: null,
         ...(action.points ? { playerPoints: action.points } : {}),
+        log: [...state.log, { type: 'winner', playerName: winnerName }],
       };
     }
 
@@ -169,6 +177,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           nextKingId: action.nextKingId,
           winningTeam: action.winningTeam,
           kittyBonus: action.kittyBonus,
+          gameOver: action.gameOver,
         },
         playerRanks: newRanks,
       };
@@ -207,6 +216,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         roundResult: null,
         throwError: null,
         playerRanks: ranks,
+        log: [],
       };
     }
 
@@ -283,6 +293,7 @@ function buildInitialState(locationState: any): GameState {
     trickPlayerOrder: [],
     leaderCardCount: 0,
     playerPoints: {},
+    log: [],
   };
 }
 
@@ -297,7 +308,7 @@ export default function GamePage() {
     roundKingId, kittyPickedUp, stagedCards, kittyCards, isKittyPhase,
     handCards, handInitialized, roundResult, playerRanks, kittySize,
     declaredJokerRank, throwError, trickPhase, currentTurn, trickPlays,
-    trickComplete, trickNum, playerPoints,
+    trickComplete, trickNum, playerPoints, log,
   } = state;
 
   // Dealing animation state (kept as useState — mutated inside setInterval)
@@ -359,6 +370,7 @@ export default function GamePage() {
       nextKingId: string;
       winningTeam: 'attacking' | 'defending';
       kittyBonus: number;
+      gameOver: boolean;
     }) => {
       dispatch({ type: 'ROUND_OVER', ...data });
     };
@@ -479,6 +491,16 @@ export default function GamePage() {
     if (rank !== trumpNumber) return false;
 
     if (trumpSuit === 'NA') {
+      // If a card is already staged, only allow same suit (forming a pair)
+      if (stagedCards.length === 1) {
+        const { suit: stagedSuit } = parseCard(stagedCards[0]);
+        if (suit !== stagedSuit) return false;
+        const sameCards = myHand.filter(c => {
+          const p = parseCard(c);
+          return p.suit === suit && p.rank === trumpNumber;
+        });
+        return sameCards.length >= 2;
+      }
       return true;
     }
 
@@ -549,7 +571,7 @@ export default function GamePage() {
 
   function handleDeclareTrump() {
     if (!canPlayDeclaration) return;
-    socket.emit('declare-trump', { gameId, card: stagedCards[0] });
+    socket.emit('declare-trump', { gameId, card: stagedCards[0], wantPair: stagedCards.length >= 2 });
     dispatch({ type: 'CLEAR_STAGED' });
   }
 
@@ -589,19 +611,15 @@ export default function GamePage() {
   }
 
   return (
-    <div
-      style={{
-        width: '100vw',
-        height: '100vh',
-        overflow: 'auto',
-        backgroundColor: '#faf2e4',
-      }}
-    >
+    <div style={{ width: '100vw', height: '100vh', display: 'flex', overflow: 'hidden', backgroundColor: '#faf2e4' }}>
+      <GameLog log={log} />
       <div
         style={{
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          minWidth: '100%',
+          minWidth: 0,
+          overflow: 'auto',
           minHeight: '100%',
         }}
       >

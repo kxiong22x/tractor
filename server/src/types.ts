@@ -50,6 +50,7 @@ export interface Game {
 export interface DeclareTrumpPayload {
   gameId: string;
   card: string;
+  wantPair?: boolean;
 }
 
 export interface TrumpDeclaredEvent {
@@ -62,6 +63,18 @@ export interface TrumpDeclaredEvent {
 export interface PlayCardsPayload {
   gameId: string;
   cards: string[];
+}
+
+export interface TrumpContext {
+  trumpSuit: string;
+  trumpNumber: string;
+}
+
+export interface PlayShape {
+  type: 'single' | 'pair' | 'tractor' | 'throw' | 'invalid';
+  tractorLength?: number;
+  suit: string;
+  components?: PlayShape[];
 }
 
 export interface TrickState {

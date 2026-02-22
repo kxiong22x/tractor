@@ -1,8 +1,8 @@
-import type React from 'react';
+import type { CSSProperties } from 'react';
 
 export type SeatPosition = 'bottom' | 'left' | 'top' | 'right' | 'top-left' | 'top-right';
 
-export const positionStyles: Record<string, React.CSSProperties> = {
+export const positionStyles: Record<string, CSSProperties> = {
   top: {
     position: 'absolute',
     top: '3%',
@@ -18,13 +18,13 @@ export const positionStyles: Record<string, React.CSSProperties> = {
   left: {
     position: 'absolute',
     left: '1.25rem',
-    top: '35%',
+    top: '50%',
     transform: 'translateY(-50%)',
   },
   right: {
     position: 'absolute',
     right: '1.25rem',
-    top: '35%',
+    top: '50%',
     transform: 'translateY(-50%)',
   },
   'top-left': {

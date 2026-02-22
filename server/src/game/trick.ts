@@ -1,22 +1,6 @@
 import { parseCard } from './deck';
-
-export interface TrumpContext {
-  trumpSuit: string;   // 'S','H','D','C' or 'NA'
-  trumpNumber: string; // '2'..'A'
-}
-
-export interface PlayShape {
-  type: 'single' | 'pair' | 'tractor' | 'throw' | 'invalid';
-  tractorLength?: number;
-  suit: string;
-  components?: PlayShape[];
-}
-
-// Rank ordering for non-trump comparison (2 is lowest, A is highest)
-const RANK_VALUES: Record<string, number> = {
-  '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8,
-  '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14,
-};
+import type { TrumpContext, PlayShape } from '../types';
+import { RANK_VALUES } from '../constants';
 
 export function rankValue(rank: string): number {
   return RANK_VALUES[rank] ?? 0;
@@ -707,13 +691,10 @@ export function determineTrickWinner(
       // Only a tractor of same length can beat
       if (shape.type !== 'tractor' || shape.tractorLength !== leaderShape.tractorLength) continue;
     } else if (leaderShape.type === 'throw') {
-      // For throws, nobody can beat the leader (throws are pre-validated as unbeatable)
-      // The only exception is if the follower plays all trump when it's a non-trump throw,
-      // but in standard Tractor rules, throws are won by the leader unless trumped.
-      // For simplicity: compare by max card value, follower must match suit or trump.
-      // A follower can only win with same suit if they somehow match all components (very rare).
-      // In practice, the leader almost always wins throws.
-      continue;
+      // A throw can only be beaten by an all-trump play matching the throw's exact structure
+      if (!cards.every(c => logicalSuit(c, ctx) === 'TRUMP')) continue;
+      if (!throwStructureMatches(cards, leaderShape, ctx)) continue;
+      // Qualifying — fall through to the trump comparison logic below
     }
 
     if (ledSuit === 'TRUMP') {
@@ -752,4 +733,36 @@ export function determineTrickWinner(
 
 function maxCardValue(cards: string[], ctx: TrumpContext): number {
   return Math.max(...cards.map(c => cardValue(c, ctx)));
+}
+
+function throwStructureMatches(followerCards: string[], throwShape: PlayShape, ctx: TrumpContext): boolean {
+  const throwComponents = throwShape.components;
+  if (!throwComponents || throwComponents.length === 0) return false;
+
+  // Classify the follower's all-trump play
+  const followerShape = classifyPlay(followerCards, ctx);
+
+  // Get follower component list (single/pair/tractor are one component; throw has multiple)
+  let followerComponents: PlayShape[];
+  if (followerShape.type === 'throw') {
+    followerComponents = followerShape.components ?? [];
+  } else if (followerShape.type !== 'invalid') {
+    followerComponents = [followerShape];
+  } else {
+    return false;
+  }
+
+  // Compare tractor lengths as sorted multisets
+  const tractorLengths = (comps: PlayShape[]) =>
+    comps.filter(c => c.type === 'tractor').map(c => c.tractorLength ?? 2).sort((a, b) => a - b);
+  const pairCount   = (comps: PlayShape[]) => comps.filter(c => c.type === 'pair').length;
+  const singleCount = (comps: PlayShape[]) => comps.filter(c => c.type === 'single').length;
+
+  const tl = tractorLengths(throwComponents);
+  const fl = tractorLengths(followerComponents);
+  if (tl.length !== fl.length || tl.some((len, i) => len !== fl[i])) return false;
+  if (pairCount(throwComponents)   !== pairCount(followerComponents))   return false;
+  if (singleCount(throwComponents) !== singleCount(followerComponents)) return false;
+
+  return true;
 }

@@ -8,6 +8,7 @@ interface RoundResult {
   nextKingId: string;
   winningTeam: 'attacking' | 'defending';
   kittyBonus: number;
+  gameOver: boolean;
 }
 
 interface RoundOverModalProps {
@@ -43,7 +44,7 @@ export default function RoundOverModal({ roundResult, players, onNextRound }: Ro
         }}
       >
         <h2 style={{ margin: '0 0 1rem', fontSize: '1.5rem' }}>
-          Round Over
+          {roundResult.gameOver ? 'Game Over!' : 'Round Over'}
         </h2>
         <div style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '0.75rem', color: roundResult.winningTeam === 'attacking' ? '#e74c3c' : '#2980b9' }}>
           {roundResult.winningTeam === 'attacking' ? 'Attacking' : 'Defending'} team wins!
@@ -69,21 +70,39 @@ export default function RoundOverModal({ roundResult, players, onNextRound }: Ro
             );
           })}
         </div>
-        <button
-          onClick={onNextRound}
-          style={{
-            padding: '0.75rem 2rem',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-            backgroundColor: '#4CAF50',
-            color: 'white',
-            border: 'none',
-            borderRadius: '0.5rem',
-            cursor: 'pointer',
-          }}
-        >
-          Next Round
-        </button>
+        {roundResult.gameOver ? (
+          <a
+            href="/"
+            style={{
+              display: 'inline-block',
+              padding: '0.75rem 2rem',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              backgroundColor: '#2980b9',
+              color: 'white',
+              borderRadius: '0.5rem',
+              textDecoration: 'none',
+            }}
+          >
+            Return to Home
+          </a>
+        ) : (
+          <button
+            onClick={onNextRound}
+            style={{
+              padding: '0.75rem 2rem',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.5rem',
+              cursor: 'pointer',
+            }}
+          >
+            Next Round
+          </button>
+        )}
       </div>
     </div>
   );

@@ -4,14 +4,12 @@ import { addPlayer, removePlayerBySocketId, getPlayersInRoom, getPlayerCountInRo
 import { removeRoom } from '../room/room.queries';
 import { createGame, updatePlayerHand, getGame, updateTrumpDeclaration, updateRoundKing, updateKitty, resetGameForNewRound } from '../game/game.queries';
 import { parseCard, cardPoints, dealCards, getKittySize } from '../game/deck';
-import { JoinRoomPayload, DeclareTrumpPayload, PlayCardsPayload, TrickState } from '../types';
-import { classifyPlay, validateFollow, validateThrow, determineTrickWinner, TrumpContext } from '../game/trick';
+import { JoinRoomPayload, DeclareTrumpPayload, PlayCardsPayload, TrickState, TrumpContext } from '../types';
+import { classifyPlay, validateFollow, validateThrow, determineTrickWinner } from '../game/trick';
+import { MAX_PLAYERS, MIN_PLAYERS_TO_START } from '../constants';
 
 // Store the last round's nextKingId per game for start-next-round
 const pendingNextKing = new Map<string, string>();
-
-const MAX_PLAYERS = 4;
-const MIN_PLAYERS_TO_START = 4;
 
 function calculateTrickPoints(plays: Map<string, string[]>): number {
   let points = 0;
@@ -206,17 +204,34 @@ export function registerSocketHandlers(io: Server) {
       }
 
       if (game.trump_count === 0) {
-        // No declaration yet — anyone can declare with a single card
-        updateTrumpDeclaration(gameId, suit, player.player_id, 1);
-        if (isFirstRound) {
-          updateRoundKing(gameId, player.player_id);
+        const wantPair = payload.wantPair === true;
+        if (wantPair) {
+          if (matchingCards.length < 2) {
+            socket.emit('room-error', { message: 'You need a pair to declare a pair' });
+            return;
+          }
+          updateTrumpDeclaration(gameId, suit, player.player_id, 2);
+          if (isFirstRound) {
+            updateRoundKing(gameId, player.player_id);
+          }
+          io.to(game.room_id).emit('trump-declared', {
+            trumpSuit: suit,
+            declarerId: player.player_id,
+            isPair: true,
+            roundKingId: isFirstRound ? player.player_id : game.round_king,
+          });
+        } else {
+          updateTrumpDeclaration(gameId, suit, player.player_id, 1);
+          if (isFirstRound) {
+            updateRoundKing(gameId, player.player_id);
+          }
+          io.to(game.room_id).emit('trump-declared', {
+            trumpSuit: suit,
+            declarerId: player.player_id,
+            isPair: false,
+            roundKingId: isFirstRound ? player.player_id : game.round_king,
+          });
         }
-        io.to(game.room_id).emit('trump-declared', {
-          trumpSuit: suit,
-          declarerId: player.player_id,
-          isPair: false,
-          roundKingId: isFirstRound ? player.player_id : game.round_king,
-        });
       } else if (game.trump_count === 1) {
         // Single declaration exists — reinforcement or override both require a pair
         if (matchingCards.length < 2) {
@@ -561,6 +576,12 @@ export function registerSocketHandlers(io: Server) {
           const winningIds = winningTeam === 'attacking' ? attackingIds : defendingIds;
           const rankUp = winningTeam === 'attacking' ? attackingRankUp : defendingRankUp;
 
+          // Check for game over before capping ranks
+          const gameOver = rankUp > 0 && winningIds.some(pid => {
+            const p = allPlayersOrdered.find(pl => pl.player_id === pid);
+            return p && p.rank === 14;
+          });
+
           for (const p of allPlayersOrdered) {
             const oldRank = p.rank;
             let newRank = oldRank;
@@ -592,6 +613,7 @@ export function registerSocketHandlers(io: Server) {
             nextKingId,
             winningTeam,
             kittyBonus,
+            gameOver,
           });
         } else {
           // After 3s delay, start next trick with winner as leader
