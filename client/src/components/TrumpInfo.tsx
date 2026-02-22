@@ -4,11 +4,10 @@ interface TrumpInfoProps {
   trumpNumber: string;
   trumpSuit: string;
   trickPhase: boolean;
-  trickNum: number;
   attackingPoints: number;
 }
 
-export default function TrumpInfo({ trumpNumber, trumpSuit, trickPhase, trickNum, attackingPoints }: TrumpInfoProps) {
+export default function TrumpInfo({ trumpNumber, trumpSuit, trickPhase, attackingPoints }: TrumpInfoProps) {
   const trumpSuitDisplay = trumpSuit === 'NA' ? 'NA' : trumpSuit === 'NT' ? 'No Suit' : (SUIT_SYMBOLS[trumpSuit] ?? trumpSuit);
 
   return (

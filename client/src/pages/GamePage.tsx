@@ -629,7 +629,6 @@ export default function GamePage() {
             trumpNumber={trumpNumber}
             trumpSuit={trumpSuit}
             trickPhase={trickPhase}
-            trickNum={trickNum}
             attackingPoints={(() => {
               if (!roundKingId) return 0;
               const kingIdx = players.findIndex(p => p.player_id === roundKingId);
