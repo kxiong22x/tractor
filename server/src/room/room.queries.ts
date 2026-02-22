@@ -15,3 +15,7 @@ export function createRoom(): Room {
 export function getRoom(roomId: string): Room | undefined {
   return db.prepare('SELECT * FROM rooms WHERE room_id = ?').get(roomId) as Room | undefined;
 }
+
+export function removeRoom(roomId: string): void {
+  db.prepare('DELETE FROM rooms WHERE room_id = ?').run(roomId);
+}

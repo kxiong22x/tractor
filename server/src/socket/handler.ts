@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { getRoom } from '../room/room.queries';
 import { addPlayer, removePlayerBySocketId, getPlayersInRoom, getPlayerCountInRoom, getPlayerBySocketId, getPlayerRank, getPlayerById, addPointsToPlayer, resetRoundPoints, getRoundPoints, updatePlayerRank } from '../player/player.queries';
+import { removeRoom } from '../room/room.queries';
 import { createGame, updatePlayerHand, getGame, updateTrumpDeclaration, updateRoundKing, updateKitty, resetGameForNewRound } from '../game/game.queries';
 import { parseCard, cardPoints, dealCards, getKittySize } from '../game/deck';
 import { JoinRoomPayload, DeclareTrumpPayload, PlayCardsPayload, TrickState } from '../types';
@@ -688,6 +689,9 @@ function handleDisconnect(io: Server, socket: Socket) {
   const player = removePlayerBySocketId(socket.id);
   if (player) {
     const players = getPlayersInRoom(player.room_id);
+    if (players.length === 0) {
+      removeRoom(player.room_id);
+    }
     io.to(player.room_id).emit('player-left', { playerId: player.player_id, players });
     socket.leave(player.room_id);
 

@@ -585,7 +585,7 @@ export default function GamePage() {
   if (isKittyPhase) {
     handButtons.push({ label: 'Finish Kitty', enabled: kittyCards.length === kittySize, onClick: handleFinishKitty });
   } else if (showPlayButton) {
-    handButtons.push({ label: inTrickPhase ? 'Play Cards' : 'Play Card', enabled: !!canPlay, onClick: handlePlay });
+    handButtons.push({ label: inTrickPhase ? 'Play Cards' : 'Declare Trump', enabled: !!canPlay, onClick: handlePlay });
   }
 
   return (

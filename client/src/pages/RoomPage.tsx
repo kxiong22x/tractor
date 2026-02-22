@@ -136,6 +136,7 @@ export default function RoomPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', textAlign: 'center', maxWidth: '31.25rem', margin: '0 auto' }}>
       <RoomHeader roomId={roomId!} />
+      <p>You need 4 players to start.</p>
       <PlayerList players={players} />
       {players.length >= 4 && (
         <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
