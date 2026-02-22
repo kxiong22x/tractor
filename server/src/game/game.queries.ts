@@ -38,3 +38,10 @@ export function updateKitty(gameId: string, kitty: string[]): void {
 export function updatePlayerHand(playerId: string, hand: string[]): void {
   db.prepare('UPDATE players SET hand = ? WHERE player_id = ?').run(JSON.stringify(hand), playerId);
 }
+
+export function resetGameForNewRound(gameId: string, trumpNumber: string, roundKing: string): void {
+  db.prepare(
+    `UPDATE games SET kitty = '[]', trump_suit = 'NA', trump_declarer = NULL, trump_count = 0,
+     round_number = round_number + 1, round_king = ?, trump_number = ? WHERE game_id = ?`
+  ).run(roundKing, trumpNumber, gameId);
+}

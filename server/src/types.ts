@@ -11,6 +11,7 @@ export interface Player {
   socket_id: string | null;
   hand: string | null;
   rank: number;
+  round_points: number;
   joined_at: string;
 }
 
@@ -42,6 +43,7 @@ export interface Game {
   trump_suit: string;
   trump_declarer: string | null;
   trump_count: number;
+  round_number: number;
   created_at: string;
 }
 
@@ -55,4 +57,20 @@ export interface TrumpDeclaredEvent {
   declarerId: string;
   isPair: boolean;
   roundKingId: string;
+}
+
+export interface PlayCardsPayload {
+  gameId: string;
+  cards: string[];
+}
+
+export interface TrickState {
+  gameId: string;
+  roomId: string;
+  trickNum: number;
+  leaderId: string;
+  currentTurn: string;
+  playerOrder: string[];
+  plays: Map<string, string[]>;
+  leaderShape: { type: 'single' | 'pair' | 'tractor' | 'throw'; tractorLength?: number; suit: string; components?: { type: 'single' | 'pair' | 'tractor'; tractorLength?: number; suit: string }[] } | null;
 }

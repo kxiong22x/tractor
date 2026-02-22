@@ -46,6 +46,9 @@ if (!playerCols.some((c) => c.name === 'hand')) {
 if (!playerCols.some((c) => c.name === 'rank')) {
   db.exec('ALTER TABLE players ADD COLUMN rank INTEGER DEFAULT 2');
 }
+if (!playerCols.some((c) => c.name === 'round_points')) {
+  db.exec('ALTER TABLE players ADD COLUMN round_points INTEGER DEFAULT 0');
+}
 
 const gameCols = db.prepare("PRAGMA table_info(games)").all() as { name: string }[];
 if (!gameCols.some((c) => c.name === 'round_king')) {
@@ -54,6 +57,9 @@ if (!gameCols.some((c) => c.name === 'round_king')) {
   db.exec("ALTER TABLE games ADD COLUMN trump_suit TEXT DEFAULT 'NA'");
   db.exec("ALTER TABLE games ADD COLUMN trump_declarer TEXT");
   db.exec("ALTER TABLE games ADD COLUMN trump_count INTEGER DEFAULT 0");
+}
+if (!gameCols.some((c) => c.name === 'round_number')) {
+  db.exec("ALTER TABLE games ADD COLUMN round_number INTEGER DEFAULT 1");
 }
 
 export default db;
