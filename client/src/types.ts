@@ -3,6 +3,7 @@ export interface Player {
   display_name: string;
   room_id: string;
   socket_id: string | null;
+  rank: number;
   joined_at: string;
 }
 

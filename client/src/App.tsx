@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
-import RoomPage from './Room/RoomPage';
-import GamePage from './Game/GamePage';
+import RoomPage from './pages/RoomPage';
+import GamePage from './pages/GamePage';
 
 export default function App() {
   return (

@@ -16,7 +16,7 @@ export default function PlayerForm({ onJoin }: PlayerFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ textAlign: 'center', marginTop: '40px' }}>
+    <form onSubmit={handleSubmit} style={{ textAlign: 'center', marginTop: '2.5rem' }}>
       <h2>Enter your display name</h2>
       <input
         type="text"
@@ -25,22 +25,22 @@ export default function PlayerForm({ onJoin }: PlayerFormProps) {
         placeholder="Your name"
         maxLength={20}
         style={{
-          padding: '8px 16px',
-          fontSize: '16px',
-          borderRadius: '6px',
-          border: '1px solid black',
+          padding: '0.5rem 1rem',
+          fontSize: '1rem',
+          borderRadius: '0.375rem',
+          border: '0.0625rem solid black',
           backgroundColor: 'white',
           color: 'black',
-          marginRight: '8px',
+          marginRight: '0.5rem',
         }}
       />
       <button
         type="submit"
         style={{
-          padding: '8px 24px',
-          fontSize: '16px',
+          padding: '0.5rem 1.5rem',
+          fontSize: '1rem',
           cursor: 'pointer',
-          borderRadius: '6px',
+          borderRadius: '0.375rem',
           border: 'none',
           backgroundColor: '#f7892e',
           color: 'white',

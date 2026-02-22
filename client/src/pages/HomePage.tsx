@@ -13,16 +13,16 @@ export default function HomePage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', textAlign: 'center' }}>
-      <h1>Tractor / Finding Friends</h1>
-      <img src="/cards.png" alt="Cards" style={{ maxWidth: '300px', width: '100%', margin: '20px 0' }} />
-      <p>Create a room and invite your friends to play!</p>
+      <h1>Tractor</h1>
+      <img src="/cards.png" alt="Cards" style={{ maxWidth: '18.75rem', width: '100%', margin: '1.25rem 0' }} />
+      <p>Create a room and invite your friends to play! Currently only 4 player games are supported. </p>
       <button
         onClick={handleCreateRoom}
         style={{
-          padding: '12px 32px',
-          fontSize: '18px',
+          padding: '0.75rem 2rem',
+          fontSize: '1.125rem',
           cursor: 'pointer',
-          borderRadius: '8px',
+          borderRadius: '0.5rem',
           border: 'none',
           backgroundColor: '#f7892e',
           color: 'white',

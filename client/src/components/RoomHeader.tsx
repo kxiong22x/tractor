@@ -10,17 +10,17 @@ export default function RoomHeader({ roomId }: RoomHeaderProps) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 0', gap: '12px' }}>
-      <h2>Room: {roomId}</h2>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem 0', gap: '0.75rem' }}>
+      <h2 style={{ margin: 0 }}>Room: {roomId}</h2>
       <button
         onClick={handleCopy}
         style={{
-          padding: '6px 16px',
+          padding: '0.375rem 1rem',
           cursor: 'pointer',
-          borderRadius: '6px',
-          border: '1px solid black',
-          backgroundColor: 'white',
-          color: 'black',
+          borderRadius: '0.375rem',
+          border: 'none',
+          backgroundColor: '#f7892e',
+          color: 'white',
         }}
       >
         Copy Link
