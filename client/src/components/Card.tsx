@@ -55,7 +55,6 @@ export default function Card({ card, faceUp, size = 'normal', selected = false, 
           border: `${isMini ? 1 : 2}px solid #ccc`,
           boxShadow: isMini ? '0 1px 3px rgba(0,0,0,0.15)' : '0 2px 6px rgba(0,0,0,0.18)',
           overflow: 'visible',
-          backgroundColor: 'white',
           backgroundColor: selected ? '#ccc' : 'white',
           opacity: selected ? 0.8 : 1,
         }}

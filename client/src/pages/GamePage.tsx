@@ -297,7 +297,7 @@ export default function GamePage() {
     roundKingId, kittyPickedUp, stagedCards, kittyCards, isKittyPhase,
     handCards, handInitialized, roundResult, playerRanks, kittySize,
     declaredJokerRank, throwError, trickPhase, currentTurn, trickPlays,
-    trickComplete, trickNum, trickPlayerOrder, leaderCardCount, playerPoints,
+    trickComplete, trickNum, playerPoints,
   } = state;
 
   // Dealing animation state (kept as useState — mutated inside setInterval)
@@ -491,7 +491,7 @@ export default function GamePage() {
   }
 
   // Check if a card is clickable in trick phase
-  function isClickableInTrickPhase(card: string): boolean {
+  function isClickableInTrickPhase(_card: string): boolean {
     if (!trickPhase) return false;
     if (!currentPlayer) return false;
     if (currentTurn !== currentPlayer.player_id) return false;
@@ -539,10 +539,6 @@ export default function GamePage() {
     if (!isDeclarable(card)) return;
     if (stagedCards.length >= 2) return;
     dispatch({ type: 'STAGE_CARD', card });
-  }
-
-  function handleStagedCardClick(card: string) {
-    dispatch({ type: 'UNSTAGE_CARD', card });
   }
 
   function handlePlayTrick() {
@@ -670,14 +666,13 @@ export default function GamePage() {
         {/* Kitty cards — above hand */}
         {isKittyPhase && (
           <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '0.75rem' }}>
-            <KittyArea
-              isKittyPhase={isKittyPhase}
-              kittyCards={kittyCards}
-              kittySize={kittySize}
-              onKittyCardClick={handleKittyCardClick}
-              trumpSuit={trumpSuit}
-              trumpNumber={trumpNumber}
-            />
+          <KittyArea
+            isKittyPhase={isKittyPhase}
+            kittyCards={kittyCards}
+            onKittyCardClick={handleKittyCardClick}
+            trumpSuit={trumpSuit}
+            trumpNumber={trumpNumber}
+          />
           </div>
         )}
         <HandDisplay

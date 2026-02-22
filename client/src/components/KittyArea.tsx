@@ -3,13 +3,12 @@ import Card from './Card';
 interface KittyAreaProps {
   isKittyPhase: boolean;
   kittyCards: string[];
-  kittySize: number;
   onKittyCardClick: (card: string) => void;
   trumpSuit: string;
   trumpNumber: string;
 }
 
-export default function KittyArea({ isKittyPhase, kittyCards, kittySize, onKittyCardClick, trumpSuit, trumpNumber }: KittyAreaProps) {
+export default function KittyArea({ isKittyPhase, kittyCards, onKittyCardClick, trumpSuit, trumpNumber }: KittyAreaProps) {
   if (!isKittyPhase) return null;
 
   return (

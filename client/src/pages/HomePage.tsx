@@ -15,7 +15,7 @@ export default function HomePage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', textAlign: 'center' }}>
       <h1>Tractor</h1>
-      <img src="/cards.png" alt="Cards" style={{ maxWidth: '18.75rem', width: '100%', margin: '1.25rem 0' }} />
+      <img src={`${import.meta.env.BASE_URL}cards.png`} alt="Cards" style={{ maxWidth: '18.75rem', width: '100%', margin: '1.25rem 0' }} />
       <p>Create a room and invite your friends to play! Currently only 4 player games are supported. </p>
       <button
         onClick={handleCreateRoom}
