@@ -11,6 +11,26 @@ import { MAX_PLAYERS, MIN_PLAYERS_TO_START } from '../constants';
 // Store the last round's nextKingId per game for start-next-round
 const pendingNextKing = new Map<string, string>();
 
+// Track games currently in the dealing animation phase
+const dealingIntervals = new Map<string, ReturnType<typeof setInterval>>();
+
+function startDealing(io: Server, gameId: string, roomId: string, totalTicks: number) {
+  if (dealingIntervals.has(gameId)) {
+    clearInterval(dealingIntervals.get(gameId)!);
+  }
+  let tick = 0;
+  const interval = setInterval(() => {
+    tick++;
+    io.to(roomId).emit('deal-tick', { tick });
+    if (tick >= totalTicks) {
+      clearInterval(interval);
+      dealingIntervals.delete(gameId);
+      io.to(roomId).emit('dealing-complete');
+    }
+  }, 500);
+  dealingIntervals.set(gameId, interval);
+}
+
 function calculateTrickPoints(plays: Map<string, string[]>): number {
   let points = 0;
   for (const cards of plays.values()) {
@@ -124,6 +144,8 @@ export function registerSocketHandlers(io: Server) {
         roundKingId: null,
         kittySize: kitty.length,
       });
+
+      startDealing(io, game.game_id, roomId, hands[0].length * gamePlayers.length);
     });
 
     socket.on('declare-trump', (payload: DeclareTrumpPayload) => {
@@ -694,6 +716,8 @@ export function registerSocketHandlers(io: Server) {
         roundNumber: updatedGame.round_number,
         kittySize: kitty.length,
       });
+
+      startDealing(io, game.game_id, game.room_id, hands[0].length * gamePlayers.length);
     });
 
     socket.on('leave-room', () => {

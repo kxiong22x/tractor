@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useReducer } from 'react';
+import { useState, useEffect, useReducer, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSocket } from '../hooks/useSocket';
 import type { Player } from '../types';
@@ -311,16 +311,16 @@ export default function GamePage() {
     trickComplete, playerPoints, log,
   } = state;
 
-  // Dealing animation state (kept as useState — mutated inside setInterval)
+  // Dealing animation state — driven by server deal-tick events
   const [globalDealTick, setGlobalDealTick] = useState(0);
-  const [dealKey, setDealKey] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rawHandRef = useRef<string[]>([]);
 
   // Find current player
   const currentSocketId = socket.id;
   const currentIndex = players.findIndex((p) => p.socket_id === currentSocketId);
   const currentPlayer = currentIndex >= 0 ? players[currentIndex] : null;
   const rawHand = currentPlayer?.hand ?? [];
+  rawHandRef.current = rawHand;
 
   // Listen for events
   useEffect(() => {
@@ -386,7 +386,14 @@ export default function GamePage() {
     }) => {
       dispatch({ type: 'GAME_STARTED', ...data });
       setGlobalDealTick(0);
-      setDealKey(prev => prev + 1);
+    };
+
+    const onDealTick = (data: { tick: number }) => {
+      setGlobalDealTick(data.tick);
+    };
+
+    const onDealingComplete = () => {
+      dispatch({ type: 'INIT_HAND', hand: rawHandRef.current });
     };
 
     socket.on('trump-declared', onTrumpDeclared);
@@ -400,6 +407,8 @@ export default function GamePage() {
     socket.on('throw-failed', onThrowFailed);
     socket.on('round-over', onRoundOver);
     socket.on('game-started', onGameStarted);
+    socket.on('deal-tick', onDealTick);
+    socket.on('dealing-complete', onDealingComplete);
     return () => {
       socket.off('trump-declared', onTrumpDeclared);
       socket.off('kitty-picked-up', onKittyPickedUp);
@@ -412,6 +421,8 @@ export default function GamePage() {
       socket.off('throw-failed', onThrowFailed);
       socket.off('round-over', onRoundOver);
       socket.off('game-started', onGameStarted);
+      socket.off('deal-tick', onDealTick);
+      socket.off('dealing-complete', onDealingComplete);
     };
   }, [socket, currentPlayer?.player_id]);
 
@@ -433,35 +444,8 @@ export default function GamePage() {
     return positionOrder[rotated];
   });
 
-  // Dealing animation
-  useEffect(() => {
-    if (rawHand.length === 0) return;
-    const totalTicks = rawHand.length * players.length;
-
-    intervalRef.current = setInterval(() => {
-      setGlobalDealTick((prev) => {
-        const next = prev + 1;
-        if (next >= totalTicks) {
-          clearInterval(intervalRef.current!);
-          intervalRef.current = null;
-        }
-        return next;
-      });
-    }, 500);
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [rawHand.length, dealKey]);
-
+  // Computed from server-driven globalDealTick — always consistent in the same render
   const isDealing = globalDealTick < rawHand.length * players.length;
-
-  // Once dealing finishes, populate handCards as the mutable source of truth
-  useEffect(() => {
-    if (!isDealing && rawHand.length > 0 && !handInitialized) {
-      dispatch({ type: 'INIT_HAND', hand: rawHand });
-    }
-  }, [isDealing, rawHand, handInitialized]);
 
   // Use handCards once populated (post-deal), otherwise use rawHand for dealing animation
   const myRevealedCount = cardsDealtForPlayer(currentIndex, globalDealTick, players.length, rawHand.length);
@@ -593,7 +577,7 @@ export default function GamePage() {
   const showPlayButton = stagedCards.length > 0;
 
   // Pick up kitty button logic
-  const showPickUpKitty = !isDealing && !kittyPickedUp && trumpSuit !== 'NA' && !!currentPlayer && currentPlayer.player_id === roundKingId;
+  const showPickUpKitty = handInitialized && !kittyPickedUp && trumpSuit !== 'NA' && !!currentPlayer && currentPlayer.player_id === roundKingId;
   const handlePickUpKitty = () => {
     dispatch({ type: 'PICK_UP_KITTY' });
     socket.emit('pick-up-kitty', { gameId });
