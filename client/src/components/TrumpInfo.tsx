@@ -8,7 +8,7 @@ interface TrumpInfoProps {
 }
 
 export default function TrumpInfo({ trumpNumber, trumpSuit, trickPhase, attackingPoints }: TrumpInfoProps) {
-  const trumpSuitDisplay = trumpSuit === 'NA' ? 'NA' : trumpSuit === 'NT' ? 'No Suit' : (SUIT_SYMBOLS[trumpSuit] ?? trumpSuit);
+  const trumpSuitDisplay = trumpSuit === 'NA' ? 'NA' : (trumpSuit === 'BJ' || trumpSuit === 'SJ') ? 'No Suit' : (SUIT_SYMBOLS[trumpSuit] ?? trumpSuit);
 
   return (
     <div

@@ -3,6 +3,13 @@ import Card from './Card';
 import { RANK_DISPLAY } from '../utils/cards';
 import { positionStyles } from '../utils/player';
 
+interface ActionButton {
+  label: string;
+  enabled: boolean;
+  onClick: () => void;
+  color?: string;
+}
+
 interface PlayerSeatProps {
   player: Player;
   position: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right';
@@ -15,9 +22,10 @@ interface PlayerSeatProps {
   rank?: number;
   trumpSuit: string;
   trumpNumber: string;
+  buttons?: ActionButton[];
 }
 
-export default function PlayerSeat({ player, position, isCurrentPlayer, isRoundKing, declaredCards, isBeingDealt, playedCards, isCurrentTurn, rank, trumpSuit, trumpNumber }: PlayerSeatProps) {
+export default function PlayerSeat({ player, position, isCurrentPlayer, isRoundKing, declaredCards, isBeingDealt, playedCards, isCurrentTurn, rank, trumpSuit, trumpNumber, buttons }: PlayerSeatProps) {
   const cardSide = position === 'bottom' ? 'above'
     : position === 'left' ? 'right'
     : position === 'right' ? 'left'
@@ -48,11 +56,37 @@ export default function PlayerSeat({ player, position, isCurrentPlayer, isRoundK
         </div>
         <div
           style={{
+            position: 'relative',
             display: 'flex',
             alignItems: 'center',
             gap: '0.375rem',
           }}
         >
+          {buttons && buttons.length > 0 && (
+            <div style={{ position: 'absolute', right: '100%', paddingRight: '0.5rem', display: 'flex', gap: '0.375rem' }}>
+              {buttons.map((btn) => (
+                <button
+                  key={btn.label}
+                  onClick={btn.onClick}
+                  disabled={!btn.enabled}
+                  style={{
+                    padding: '0.4rem 1rem',
+                    fontSize: '0.875rem',
+                    fontWeight: 'bold',
+                    backgroundColor: btn.enabled ? (btn.color ?? '#4CAF50') : '#888',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    cursor: btn.enabled ? 'pointer' : 'not-allowed',
+                    opacity: btn.enabled ? 1 : 0.6,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {btn.label}
+                </button>
+              ))}
+            </div>
+          )}
           <div
             style={{
               padding: '0.75rem 1.25rem',

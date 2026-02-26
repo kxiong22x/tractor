@@ -1,8 +1,13 @@
-import { SUITS, RANKS } from '../constants';
+import { SUITS, RANKS } from './constants';
 
 /** Returns kitty size: 6 for 6 players, 8 otherwise. */
 export function getKittySize(numPlayers: number): number {
   return numPlayers === 6 ? 6 : 8;
+}
+
+/** Parse a player's hand from its JSON-serialized DB form. */
+export function parseHand(player: { hand: string | null }): string[] {
+  return player.hand ? JSON.parse(player.hand as unknown as string) : [];
 }
 
 export function parseCard(card: string): { suit: string; rank: string } {

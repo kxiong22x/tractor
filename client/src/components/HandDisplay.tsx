@@ -4,6 +4,7 @@ interface ActionButton {
   label: string;
   enabled: boolean;
   onClick: () => void;
+  color?: string;
 }
 
 interface HandDisplayProps {
@@ -46,7 +47,7 @@ export default function HandDisplay({ displayHand, stagedCards, isKittyPhase, is
             padding: '0.5rem 1.5rem',
             fontSize: '0.9375rem',
             fontWeight: 'bold',
-            backgroundColor: btn.enabled ? '#4CAF50' : '#888',
+            backgroundColor: btn.enabled ? (btn.color ?? '#4CAF50') : '#888',
             color: 'white',
             border: 'none',
             borderRadius: '0.5rem',

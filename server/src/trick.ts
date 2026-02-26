@@ -1,6 +1,18 @@
 import { parseCard } from './deck';
-import type { TrumpContext, PlayShape } from '../types';
-import { RANK_VALUES } from '../constants';
+import type { TrumpContext, PlayShape } from './types';
+import { RANK_VALUES } from './constants';
+
+function groupByRank(cards: string[]): Map<string, string[]> {
+  const groups = new Map<string, string[]>();
+  for (const card of cards) {
+    const { suit, rank } = parseCard(card);
+    const key = `${suit}${rank}`;
+    const arr = groups.get(key) ?? [];
+    arr.push(card);
+    groups.set(key, arr);
+  }
+  return groups;
+}
 
 export function rankValue(rank: string): number {
   return RANK_VALUES[rank] ?? 0;
@@ -94,14 +106,7 @@ export function classifyPlay(cards: string[], ctx: TrumpContext): PlayShape {
   }
 
   // Group into pairs by face suit+rank
-  const groups = new Map<string, string[]>();
-  for (const card of cards) {
-    const { suit: faceSuit, rank } = parseCard(card);
-    const key = `${faceSuit}${rank}`;
-    const arr = groups.get(key) ?? [];
-    arr.push(card);
-    groups.set(key, arr);
-  }
+  const groups = groupByRank(cards);
 
   // Check if it's a valid tractor (all groups are pairs, consecutive values)
   if (cards.length % 2 === 0) {
@@ -144,14 +149,7 @@ function decomposeThrow(cards: string[], ctx: TrumpContext): PlayShape {
   if (!suits.every(s => s === suit)) return { type: 'invalid', suit: '' };
 
   // Group by face suit+rank
-  const groups = new Map<string, string[]>();
-  for (const card of cards) {
-    const { suit: faceSuit, rank } = parseCard(card);
-    const key = `${faceSuit}${rank}`;
-    const arr = groups.get(key) ?? [];
-    arr.push(card);
-    groups.set(key, arr);
-  }
+  const groups = groupByRank(cards);
 
   // Build pair values (groups with 2+ cards)
   const pairEntries: { key: string; value: number }[] = [];
@@ -240,14 +238,7 @@ export function validateThrow(
 
   // We need to map components back to actual cards for the failed case
   // Group cards by face suit+rank, sorted by card value
-  const groups = new Map<string, string[]>();
-  for (const card of cards) {
-    const { suit: faceSuit, rank } = parseCard(card);
-    const key = `${faceSuit}${rank}`;
-    const arr = groups.get(key) ?? [];
-    arr.push(card);
-    groups.set(key, arr);
-  }
+  const groups = groupByRank(cards);
 
   // Build sorted pair entries for mapping
   const pairEntries: { key: string; value: number; cards: string[] }[] = [];

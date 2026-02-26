@@ -1,5 +1,5 @@
-import db from '../db';
-import { Room } from '../types';
+import db from './db';
+import { Room } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 export function createRoom(): Room {

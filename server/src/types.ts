@@ -85,5 +85,28 @@ export interface TrickState {
   currentTurn: string;
   playerOrder: string[];
   plays: Map<string, string[]>;
+  committed: Set<string>;
   leaderShape: { type: 'single' | 'pair' | 'tractor' | 'throw'; tractorLength?: number; suit: string; components?: { type: 'single' | 'pair' | 'tractor'; tractorLength?: number; suit: string }[] } | null;
+}
+
+export interface RejoinSuccessPayload {
+  players: Player[];
+  game: Game;
+  myHand: string[];
+  phase: 'dealing' | 'declaration' | 'kitty' | 'trick' | 'round-over';
+  trickState: {
+    trickNum: number;
+    leaderId: string;
+    currentTurn: string;
+    playerOrder: string[];
+    plays: [string, string[]][];
+    committed: string[];
+    leaderShape: PlayShape | null;
+  } | null;
+  pendingNextTrick: {
+    winnerId: string;
+    trickPoints: number;
+    nextTrickNum: number;
+    rotatedOrder: string[];
+  } | null;
 }

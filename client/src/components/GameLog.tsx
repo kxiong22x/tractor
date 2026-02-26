@@ -55,6 +55,24 @@ export default function GameLog({ log }: GameLogProps) {
             </div>
           );
         }
+        if (entry.type === 'declare') {
+          return (
+            <div key={i}>
+              <span style={{ color: '#5f5f5f' }}>{entry.playerName}</span>
+              {' declared '}
+              {entry.cards.map((card, j) => (
+                <span key={j}>{j > 0 ? ' ' : ''}<CardSpan card={card} /></span>
+              ))}
+            </div>
+          );
+        }
+        if (entry.type === 'undo') {
+          return (
+            <div key={i} style={{ color: '#5f5f5f', fontStyle: 'italic' }}>
+              {entry.playerName} undid play
+            </div>
+          );
+        }
         return (
           <div key={i}>
             <span style={{ color: '#5f5f5f' }}>{entry.playerName}</span>

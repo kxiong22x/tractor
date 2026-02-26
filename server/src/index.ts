@@ -2,7 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import roomRoutes from './room/room.routes';
+import roomRoutes from './routes';
 import { registerSocketHandlers } from './socket/handler';
 
 const app = express();

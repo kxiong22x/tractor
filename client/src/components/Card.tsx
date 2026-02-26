@@ -20,7 +20,7 @@ export default function Card({ card, faceUp, size = 'normal', selected = false, 
     const { suit, rank } = parseCard(card);
     if (suit === 'J') return true;
     if (rank === trumpNumber) return true;
-    if (trumpSuit !== 'NA' && trumpSuit !== 'NT' && suit === trumpSuit) return true;
+    if (trumpSuit !== 'NA' && trumpSuit !== 'BJ' && trumpSuit !== 'SJ' && suit === trumpSuit) return true;
     return false;
   })();
 

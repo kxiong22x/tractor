@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { createRoom, getRoom } from './room.queries';
-import { getPlayersInRoom } from '../player/player.queries';
+import { getPlayersInRoom } from './player.queries';
 
 const router = Router();
 
