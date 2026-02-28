@@ -5,7 +5,6 @@ import { parseCard, parseHand, getKittySize } from '../../deck';
 import { DeclareTrumpPayload } from '../../types';
 import { MAX_PLAYERS } from '../../constants';
 import { startTrick } from './trick';
-import { isRoomFrozen } from '../freeze';
 
 export function registerTrumpHandlers(io: Server, socket: Socket) {
   socket.on('declare-trump', (payload: DeclareTrumpPayload) => {
@@ -14,11 +13,6 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
     const game = getGame(gameId);
     if (!game) {
       socket.emit('room-error', { message: 'Game not found' });
-      return;
-    }
-
-    if (isRoomFrozen(game.room_id)) {
-      socket.emit('game-paused', { reason: 'A player is disconnected' });
       return;
     }
 
@@ -141,11 +135,6 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
       return;
     }
 
-    if (isRoomFrozen(game.room_id)) {
-      socket.emit('game-paused', { reason: 'A player is disconnected' });
-      return;
-    }
-
     const player = getPlayerBySocketId(socket.id);
     if (!player || player.player_id !== game.round_king) {
       socket.emit('room-error', { message: 'Only the round king can pick up the kitty' });
@@ -164,11 +153,6 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
     const game = getGame(gameId);
     if (!game) {
       socket.emit('room-error', { message: 'Game not found' });
-      return;
-    }
-
-    if (isRoomFrozen(game.room_id)) {
-      socket.emit('game-paused', { reason: 'A player is disconnected' });
       return;
     }
 

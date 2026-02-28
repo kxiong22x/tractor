@@ -14,9 +14,3 @@ export const pendingNextTrick = new Map<string, {
   nextTrickNum: number;
   rotatedOrder: string[];
 }>();
-
-// roomId -> Set<playerId>
-export const disconnectedPlayers = new Map<string, Set<string>>();
-
-// playerId -> timeout handle
-export const reconnectTimeouts = new Map<string, ReturnType<typeof setTimeout>>();

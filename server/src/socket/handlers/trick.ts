@@ -6,7 +6,6 @@ import { classifyPlay, validateFollow, validateThrow, determineTrickWinner } fro
 import { PlayCardsPayload, TrickState, TrumpContext } from '../../types';
 import { MAX_PLAYERS } from '../../constants';
 import { trickStates, pendingNextTrick, pendingNextKing } from '../state';
-import { isRoomFrozen } from '../freeze';
 
 function calculateTrickPoints(plays: Map<string, string[]>): number {
   let points = 0;
@@ -53,11 +52,6 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
     const trickState = trickStates.get(gameId);
     if (!trickState) {
       socket.emit('play-error', { message: 'No active trick' });
-      return;
-    }
-
-    if (isRoomFrozen(trickState.roomId)) {
-      socket.emit('game-paused', { reason: 'A player is disconnected' });
       return;
     }
 
@@ -357,11 +351,6 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
     const trickState = trickStates.get(gameId);
     if (!trickState) {
       socket.emit('play-error', { message: 'No active trick' });
-      return;
-    }
-
-    if (isRoomFrozen(trickState.roomId)) {
-      socket.emit('game-paused', { reason: 'A player is disconnected' });
       return;
     }
 

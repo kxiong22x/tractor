@@ -5,7 +5,6 @@ import { dealCards } from '../../deck';
 import { MAX_PLAYERS, MIN_PLAYERS_TO_START } from '../../constants';
 import { dealingIntervals, pendingNextKing } from '../state';
 import { startTrick } from './trick';
-import { isRoomFrozen } from '../freeze';
 
 export function startDealing(io: Server, gameId: string, roomId: string, totalTicks: number) {
   if (dealingIntervals.has(gameId)) {
@@ -69,11 +68,6 @@ export function registerGameHandlers(io: Server, socket: Socket) {
     const game = getGame(gameId);
     if (!game) {
       socket.emit('room-error', { message: 'Game not found' });
-      return;
-    }
-
-    if (isRoomFrozen(game.room_id)) {
-      socket.emit('game-paused', { reason: 'A player is disconnected' });
       return;
     }
 

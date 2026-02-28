@@ -20,4 +20,8 @@ router.get('/rooms/:roomId', (req: Request, res: Response) => {
   res.json({ room, players });
 });
 
+router.get('/ping', (req: Request, res: Response) => {
+  res.status(200).json({ message: 'ok' });
+});
+
 export default router;

@@ -12,7 +12,6 @@ import HandDisplay from '../components/HandDisplay';
 import GameLog, { type LogEntry } from '../components/GameLog';
 import { parseCard, sortHand } from '../utils/cards';
 import { cardsDealtForPlayer, getPositionOrder } from '../utils/player';
-import { savePlayerId, getStoredPlayerId, clearStoredPlayerId } from '../utils/reconnect';
 
 interface GamePlayer extends Player {
   hand: string[];
@@ -73,18 +72,7 @@ type GameAction =
   | { type: 'PICK_UP_KITTY' }
   | { type: 'INIT_HAND'; hand: string[] }
   | { type: 'PLAY_UNDONE'; playerId: string; cards: string[]; currentPlayerId: string | undefined; trickUndone: boolean; points?: Record<string, number> }
-  | { type: 'UPDATE_PLAYERS'; players: GamePlayer[] }
-  | {
-      type: 'REJOIN_SUCCESS';
-      players: GamePlayer[];
-      game: { game_id: string; trump_number: string; trump_suit: string; trump_declarer: string | null; round_king: string | null };
-      myHand: string[];
-      phase: 'declaration' | 'kitty' | 'trick';
-      currentTurn: string | null;
-      trickPlayerOrder: string[];
-      trickPlays: Record<string, string[]>;
-      trickCommitted: string[];
-    };
+  ;
 
 // ── Reducer ───────────────────────────────────────────────────────────
 
@@ -256,28 +244,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'INIT_HAND':
       return { ...state, handCards: action.hand, handInitialized: true };
 
-    case 'UPDATE_PLAYERS':
-      return { ...state, players: action.players };
-
-    case 'REJOIN_SUCCESS':
-      return {
-        ...state,
-        players: action.players,
-        gameId: action.game.game_id,
-        trumpNumber: action.game.trump_number,
-        trumpSuit: action.game.trump_suit,
-        trumpDeclarerId: action.game.trump_declarer,
-        roundKingId: action.game.round_king,
-        phase: action.phase,
-        handCards: action.myHand,
-        handInitialized: true,
-        currentTurn: action.currentTurn,
-        trickPlayerOrder: action.trickPlayerOrder,
-        trickPlays: action.trickPlays,
-        trickCommitted: action.trickCommitted,
-        stagedCards: [],
-      };
-
     default:
       return state;
   }
@@ -327,7 +293,6 @@ export default function GamePage() {
 
   const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
   const [throwError, setThrowError] = useState<string | null>(null);
-  const [disconnectedPlayerIds, setDisconnectedPlayerIds] = useState<Set<string>>(new Set());
   const kittySize = players.length === 6 ? 6 : 8;
 
   // Dealing animation state — driven by server deal-tick events
@@ -400,9 +365,6 @@ export default function GamePage() {
       setRoundResult(null);
       setThrowError(null);
       setGlobalDealTick(0);
-      // Save player ID for reconnection (find the entry whose socket_id matches ours)
-      const me = data.players.find(p => p.socket_id === socket.id);
-      if (me) savePlayerId(me.player_id);
     };
 
     const onDealTick = (data: { tick: number }) => {
@@ -417,71 +379,7 @@ export default function GamePage() {
       dispatch({ type: 'PLAY_UNDONE', ...data, currentPlayerId: currentPlayer?.player_id });
     };
 
-    const onConnect = () => {
-      const storedId = getStoredPlayerId();
-      if (storedId) {
-        socket.emit('rejoin-game', { playerId: storedId });
-      }
-    };
-
-    const onRejoinSuccess = (data: {
-      players: GamePlayer[];
-      game: { game_id: string; trump_number: string; trump_suit: string; trump_declarer: string | null; round_king: string | null };
-      myHand: string[];
-      phase: 'dealing' | 'declaration' | 'kitty' | 'trick' | 'round-over';
-      trickState: {
-        trickNum: number;
-        leaderId: string;
-        currentTurn: string;
-        playerOrder: string[];
-        plays: [string, string[]][];
-        committed: string[];
-        leaderShape: unknown;
-      } | null;
-      pendingNextTrick: { winnerId: string; trickPoints: number; nextTrickNum: number; rotatedOrder: string[] } | null;
-    }) => {
-      const clientPhase: 'declaration' | 'kitty' | 'trick' =
-        data.phase === 'trick' ? 'trick'
-        : data.phase === 'kitty' ? 'kitty'
-        : 'declaration';
-
-      const trickPlays: Record<string, string[]> = {};
-      if (data.trickState) {
-        for (const [pid, cards] of data.trickState.plays) {
-          trickPlays[pid] = cards;
-        }
-      }
-
-      dispatch({
-        type: 'REJOIN_SUCCESS',
-        players: data.players,
-        game: data.game,
-        myHand: data.myHand,
-        phase: clientPhase,
-        currentTurn: data.trickState?.currentTurn ?? null,
-        trickPlayerOrder: data.trickState?.playerOrder ?? [],
-        trickPlays,
-        trickCommitted: data.trickState?.committed ?? [],
-      });
-      setDisconnectedPlayerIds(new Set());
-    };
-
-    const onPlayerDisconnected = (data: { playerId: string; players: GamePlayer[] }) => {
-      setDisconnectedPlayerIds(prev => new Set([...prev, data.playerId]));
-      dispatch({ type: 'UPDATE_PLAYERS', players: data.players });
-    };
-
-    const onPlayerReconnected = (data: { playerId: string; players: GamePlayer[] }) => {
-      setDisconnectedPlayerIds(prev => {
-        const next = new Set(prev);
-        next.delete(data.playerId);
-        return next;
-      });
-      dispatch({ type: 'UPDATE_PLAYERS', players: data.players });
-    };
-
     const onGameAbandoned = () => {
-      clearStoredPlayerId();
       navigate('/');
     };
 
@@ -499,10 +397,6 @@ export default function GamePage() {
     socket.on('deal-tick', onDealTick);
     socket.on('dealing-complete', onDealingComplete);
     socket.on('play-undone', onPlayUndone);
-    socket.on('connect', onConnect);
-    socket.on('rejoin-success', onRejoinSuccess);
-    socket.on('player-disconnected', onPlayerDisconnected);
-    socket.on('player-reconnected', onPlayerReconnected);
     socket.on('game-abandoned', onGameAbandoned);
     return () => {
       socket.off('trump-declared', onTrumpDeclared);
@@ -519,10 +413,6 @@ export default function GamePage() {
       socket.off('deal-tick', onDealTick);
       socket.off('dealing-complete', onDealingComplete);
       socket.off('play-undone', onPlayUndone);
-      socket.off('connect', onConnect);
-      socket.off('rejoin-success', onRejoinSuccess);
-      socket.off('player-disconnected', onPlayerDisconnected);
-      socket.off('player-reconnected', onPlayerReconnected);
       socket.off('game-abandoned', onGameAbandoned);
     };
   }, [socket, currentPlayer?.player_id]);
@@ -821,27 +711,6 @@ export default function GamePage() {
       </div>
 
         {/* Overlays */}
-        {disconnectedPlayerIds.size > 0 && (() => {
-          const dcNames = players
-            .filter(p => disconnectedPlayerIds.has(p.player_id))
-            .map(p => p.display_name)
-            .join(', ');
-          return (
-            <div style={{
-              position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
-            }}>
-              <div style={{
-                backgroundColor: '#fff', borderRadius: '0.75rem', padding: '2rem 2.5rem',
-                textAlign: 'center', maxWidth: '24rem',
-              }}>
-                <h3 style={{ marginBottom: '0.75rem' }}>Game Paused</h3>
-                <p>{dcNames} disconnected. Waiting for them to reconnect&hellip;</p>
-              </div>
-            </div>
-          );
-        })()}
-
         {throwError && <ThrowError message={throwError} />}
 
         {trickComplete && <TrickCompleteOverlay winnerName={trickComplete.winnerName} />}
