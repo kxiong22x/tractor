@@ -94,6 +94,18 @@ export interface RejoinSuccessPayload {
   game: Game;
   myHand: string[];
   phase: 'dealing' | 'declaration' | 'kitty' | 'trick' | 'round-over';
+  kittyCards?: string[];
+  roundResult?: {
+    attackingPoints: number;
+    defendingPoints: number;
+    rankChanges: Record<string, { oldRank: number; newRank: number }>;
+    nextKingId: string;
+    winningTeam: 'attacking' | 'defending';
+    kittyBonus: number;
+    gameOver: boolean;
+  };
+  currentDealTick: number;
+  totalDealTicks: number;
   trickState: {
     trickNum: number;
     leaderId: string;

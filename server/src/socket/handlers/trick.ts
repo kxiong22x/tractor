@@ -5,7 +5,7 @@ import { parseHand, cardPoints } from '../../deck';
 import { classifyPlay, validateFollow, validateThrow, determineTrickWinner } from '../../trick';
 import { PlayCardsPayload, TrickState, TrumpContext } from '../../types';
 import { MAX_PLAYERS } from '../../constants';
-import { trickStates, pendingNextTrick, pendingNextKing } from '../state';
+import { trickStates, pendingNextTrick, pendingNextKing, pendingRoundResults } from '../state';
 
 function calculateTrickPoints(plays: Map<string, string[]>): number {
   let points = 0;
@@ -312,7 +312,7 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
 
         pendingNextKing.set(gameId, nextKingId);
 
-        io.to(trickState.roomId).emit('round-over', {
+        const roundResult = {
           attackingPoints,
           defendingPoints: Object.values(finalPoints).reduce((a, b) => a + b, 0) - attackingPoints,
           rankChanges,
@@ -320,7 +320,10 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
           winningTeam,
           kittyBonus,
           gameOver,
-        });
+        };
+        pendingRoundResults.set(gameId, roundResult);
+
+        io.to(trickState.roomId).emit('round-over', roundResult);
       } else {
         const nextTrickNum = trickState.trickNum + 1;
         const roomId = trickState.roomId;

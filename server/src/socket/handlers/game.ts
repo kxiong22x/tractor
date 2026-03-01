@@ -3,20 +3,22 @@ import { getPlayersInRoom, resetRoundPoints, getPlayerRank, updatePlayerHand } f
 import { createGame, getGame, updateKitty, resetGameForNewRound } from '../../game.queries';
 import { dealCards } from '../../deck';
 import { MAX_PLAYERS, MIN_PLAYERS_TO_START } from '../../constants';
-import { dealingIntervals, pendingNextKing } from '../state';
+import { dealingIntervals, pendingNextKing, dealingTicks, pendingRoundResults } from '../state';
 import { startTrick } from './trick';
 
-export function startDealing(io: Server, gameId: string, roomId: string, totalTicks: number) {
+export function startDealing(io: Server, gameId: string, roomId: string, totalTicks: number, startFromTick = 0) {
   if (dealingIntervals.has(gameId)) {
     clearInterval(dealingIntervals.get(gameId)!);
   }
-  let tick = 0;
+  let tick = startFromTick;
   const interval = setInterval(() => {
     tick++;
+    dealingTicks.set(gameId, { current: tick, total: totalTicks });
     io.to(roomId).emit('deal-tick', { tick });
     if (tick >= totalTicks) {
       clearInterval(interval);
       dealingIntervals.delete(gameId);
+      dealingTicks.delete(gameId);
       io.to(roomId).emit('dealing-complete');
     }
   }, 500);
@@ -77,6 +79,7 @@ export function registerGameHandlers(io: Server, socket: Socket) {
       return;
     }
     pendingNextKing.delete(gameId);
+    pendingRoundResults.delete(gameId);
 
     resetRoundPoints(game.room_id);
 

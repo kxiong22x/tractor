@@ -5,6 +5,7 @@ import { parseCard, parseHand, getKittySize } from '../../deck';
 import { DeclareTrumpPayload } from '../../types';
 import { MAX_PLAYERS } from '../../constants';
 import { startTrick } from './trick';
+import { kittyPickedUpGames, trickStates } from '../state';
 
 export function registerTrumpHandlers(io: Server, socket: Socket) {
   socket.on('declare-trump', (payload: DeclareTrumpPayload) => {
@@ -13,6 +14,11 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
     const game = getGame(gameId);
     if (!game) {
       socket.emit('room-error', { message: 'Game not found' });
+      return;
+    }
+
+    if (kittyPickedUpGames.has(gameId)) {
+      socket.emit('room-error', { message: 'Trump declaration is not allowed after the kitty has been picked up' });
       return;
     }
 
@@ -135,6 +141,11 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
       return;
     }
 
+    if (trickStates.has(gameId)) {
+      socket.emit('room-error', { message: 'Cannot pick up kitty after tricks have started' });
+      return;
+    }
+
     const player = getPlayerBySocketId(socket.id);
     if (!player || player.player_id !== game.round_king) {
       socket.emit('room-error', { message: 'Only the round king can pick up the kitty' });
@@ -143,6 +154,7 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
 
     const kittyCards: string[] = JSON.parse(game.kitty as string);
 
+    kittyPickedUpGames.add(gameId);
     socket.emit('kitty-picked-up', { kittyCards });
     socket.to(game.room_id).emit('kitty-picked-up', {});
   });
@@ -172,6 +184,7 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
     updateKitty(gameId, kittyCards);
     updatePlayerHand(player.player_id, handCards);
 
+    kittyPickedUpGames.delete(gameId);
     io.to(game.room_id).emit('kitty-finished', {});
 
     const kingIndex = players.findIndex(p => p.player_id === game.round_king);

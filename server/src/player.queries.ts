@@ -33,6 +33,12 @@ export function setPlayerDisconnected(socketId: string): Player | undefined {
   return player;
 }
 
+export function getDisconnectedPlayerByName(roomId: string, displayName: string): Player | undefined {
+  return db.prepare(
+    'SELECT * FROM players WHERE room_id = ? AND display_name = ? AND socket_id IS NULL'
+  ).get(roomId, displayName) as Player | undefined;
+}
+
 export function setPlayerReconnected(playerId: string, newSocketId: string): Player | undefined {
   db.prepare('UPDATE players SET socket_id = ? WHERE player_id = ?').run(newSocketId, playerId);
   return db.prepare('SELECT * FROM players WHERE player_id = ?').get(playerId) as Player | undefined;

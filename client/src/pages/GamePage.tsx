@@ -6,6 +6,7 @@ import PlayerSeat from '../components/PlayerSeat';
 import TrumpInfo from '../components/TrumpInfo';
 import KittyArea from '../components/KittyArea';
 import RoundOverModal from '../components/RoundOverModal';
+import PlayerDisconnectedModal from '../components/PlayerDisconnectedModal';
 import ThrowError from '../components/ThrowError';
 import TrickCompleteOverlay from '../components/TrickCompleteOverlay';
 import HandDisplay from '../components/HandDisplay';
@@ -72,6 +73,8 @@ type GameAction =
   | { type: 'PICK_UP_KITTY' }
   | { type: 'INIT_HAND'; hand: string[] }
   | { type: 'PLAY_UNDONE'; playerId: string; cards: string[]; currentPlayerId: string | undefined; trickUndone: boolean; points?: Record<string, number> }
+  | { type: 'UPDATE_PLAYERS'; players: GamePlayer[] }
+  | { type: 'RESTORE_TRICK_STATE'; trickPlays: Record<string, string[]>; trickPlayerOrder: string[]; currentTurn: string; trickCommitted: string[]; hand: string[]; playerPoints: Record<string, number> }
   ;
 
 // ── Reducer ───────────────────────────────────────────────────────────
@@ -244,6 +247,22 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'INIT_HAND':
       return { ...state, handCards: action.hand, handInitialized: true };
 
+    case 'UPDATE_PLAYERS':
+      return { ...state, players: action.players };
+
+    case 'RESTORE_TRICK_STATE':
+      return {
+        ...state,
+        phase: 'trick' as const,
+        trickPlays: action.trickPlays,
+        trickPlayerOrder: action.trickPlayerOrder,
+        currentTurn: action.currentTurn,
+        trickCommitted: action.trickCommitted,
+        handCards: action.hand,
+        handInitialized: true,
+        playerPoints: action.playerPoints,
+      };
+
     default:
       return state;
   }
@@ -258,8 +277,8 @@ function buildInitialState(locationState: any): GameState {
     gameId: locationState?.gameId ?? '',
     trumpNumber: locationState?.trumpNumber ?? '2',
     trumpSuit: locationState?.trumpSuit ?? 'NA',
-    trumpDeclarerId: null,
-    trumpIsPair: false,
+    trumpDeclarerId: locationState?.trumpDeclarerId ?? null,
+    trumpIsPair: locationState?.trumpIsPair ?? false,
     roundKingId: locationState?.roundKingId ?? null,
     kittyPickedUp: false,
     stagedCards: [],
@@ -291,12 +310,13 @@ export default function GamePage() {
     trickComplete, playerPoints, log,
   } = state;
 
-  const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
+  const [roundResult, setRoundResult] = useState<RoundResult | null>(location.state?.roundResult ?? null);
   const [throwError, setThrowError] = useState<string | null>(null);
+  const [disconnectedPlayerName, setDisconnectedPlayerName] = useState<string | null>(null);
   const kittySize = players.length === 6 ? 6 : 8;
 
   // Dealing animation state — driven by server deal-tick events
-  const [globalDealTick, setGlobalDealTick] = useState(0);
+  const [globalDealTick, setGlobalDealTick] = useState(location.state?.initialDealTick ?? 0);
   const rawHandRef = useRef<string[]>([]);
 
   // Find current player
@@ -383,39 +403,61 @@ export default function GamePage() {
       navigate('/');
     };
 
-    socket.on('trump-declared', onTrumpDeclared);
-    socket.on('kitty-picked-up', onKittyPickedUp);
-    socket.on('kitty-finished', onKittyFinished);
-    socket.on('trick-started', onTrickStarted);
-    socket.on('cards-played', onCardsPlayed);
-    socket.on('turn-advanced', onTurnAdvanced);
-    socket.on('trick-complete', onTrickComplete);
-    socket.on('play-error', onPlayError);
-    socket.on('throw-failed', onThrowFailed);
-    socket.on('round-over', onRoundOver);
-    socket.on('game-started', onGameStarted);
-    socket.on('deal-tick', onDealTick);
-    socket.on('dealing-complete', onDealingComplete);
-    socket.on('play-undone', onPlayUndone);
-    socket.on('game-abandoned', onGameAbandoned);
-    return () => {
-      socket.off('trump-declared', onTrumpDeclared);
-      socket.off('kitty-picked-up', onKittyPickedUp);
-      socket.off('kitty-finished', onKittyFinished);
-      socket.off('trick-started', onTrickStarted);
-      socket.off('cards-played', onCardsPlayed);
-      socket.off('turn-advanced', onTurnAdvanced);
-      socket.off('trick-complete', onTrickComplete);
-      socket.off('play-error', onPlayError);
-      socket.off('throw-failed', onThrowFailed);
-      socket.off('round-over', onRoundOver);
-      socket.off('game-started', onGameStarted);
-      socket.off('deal-tick', onDealTick);
-      socket.off('dealing-complete', onDealingComplete);
-      socket.off('play-undone', onPlayUndone);
-      socket.off('game-abandoned', onGameAbandoned);
+    const onPlayerDisconnected = (data: { playerId: string; playerName: string }) => {
+      setDisconnectedPlayerName(data.playerName);
     };
+
+    const onPlayerReconnected = (data: { playerId: string; players: GamePlayer[] }) => {
+      setDisconnectedPlayerName(null);
+      dispatch({ type: 'UPDATE_PLAYERS', players: data.players });
+    };
+
+    const handlers: [string, (...args: any[]) => void][] = [
+      ['trump-declared', onTrumpDeclared],
+      ['kitty-picked-up', onKittyPickedUp],
+      ['kitty-finished', onKittyFinished],
+      ['trick-started', onTrickStarted],
+      ['cards-played', onCardsPlayed],
+      ['turn-advanced', onTurnAdvanced],
+      ['trick-complete', onTrickComplete],
+      ['play-error', onPlayError],
+      ['throw-failed', onThrowFailed],
+      ['round-over', onRoundOver],
+      ['game-started', onGameStarted],
+      ['deal-tick', onDealTick],
+      ['dealing-complete', onDealingComplete],
+      ['play-undone', onPlayUndone],
+      ['game-abandoned', onGameAbandoned],
+      ['player-disconnected', onPlayerDisconnected],
+      ['player-reconnected', onPlayerReconnected],
+    ];
+    for (const [event, handler] of handlers) socket.on(event, handler);
+    return () => { for (const [event, handler] of handlers) socket.off(event, handler); };
   }, [socket, currentPlayer?.player_id]);
+
+  useEffect(() => {
+    if (location.state?.phase === 'declaration' || location.state?.phase === 'round-over') {
+      dispatch({ type: 'INIT_HAND', hand: rawHandRef.current });
+    } else if (location.state?.phase === 'kitty') {
+      dispatch({ type: 'INIT_HAND', hand: rawHandRef.current });
+      dispatch({ type: 'KITTY_PICKED_UP', kittyCards: location.state?.kittyCards ?? undefined });
+    } else if (location.state?.phase === 'trick' && location.state?.trickState) {
+      const ts = location.state.trickState;
+      const playerPoints = (location.state.players as GamePlayer[]).reduce(
+        (acc: Record<string, number>, p: GamePlayer) => ({ ...acc, [p.player_id]: p.round_points }),
+        {}
+      );
+      dispatch({
+        type: 'RESTORE_TRICK_STATE',
+        trickPlays: Object.fromEntries(ts.plays),
+        trickPlayerOrder: ts.playerOrder,
+        currentTurn: ts.currentTurn,
+        trickCommitted: ts.committed,
+        hand: rawHandRef.current,
+        playerPoints,
+      });
+    }
+  }, []);
 
   if (players.length === 0) {
     return (
@@ -447,6 +489,7 @@ export default function GamePage() {
 
   // Check if a card is declarable (trump number card or joker pair that can be clicked)
   function isDeclarable(card: string): boolean {
+    if (phase !== 'declaration') return false;
     if (kittyPickedUp) return false;
 
     const { suit, rank } = parseCard(card);
@@ -568,7 +611,7 @@ export default function GamePage() {
   const showPlayButton = stagedCards.length > 0;
 
   // Pick up kitty button logic
-  const showPickUpKitty = handInitialized && !kittyPickedUp && trumpSuit !== 'NA' && !!currentPlayer && currentPlayer.player_id === roundKingId;
+  const showPickUpKitty = handInitialized && !kittyPickedUp && phase === 'declaration' && trumpSuit !== 'NA' && !!currentPlayer && currentPlayer.player_id === roundKingId;
   const handlePickUpKitty = () => {
     dispatch({ type: 'PICK_UP_KITTY' });
     socket.emit('pick-up-kitty', { gameId });
@@ -651,7 +694,7 @@ export default function GamePage() {
         <div style={{ position: 'relative', flex: 1, minHeight: '22rem' }}>
           {players.map((player, i) => {
             const isDeclarer = trumpDeclarerId === player.player_id && trumpSuit !== 'NA';
-            const declaredCards = isDeclarer && !kittyPickedUp
+            const declaredCards = isDeclarer && phase === 'declaration' && !kittyPickedUp
               ? (trumpSuit === 'BJ' || trumpSuit === 'SJ')
                 ? [`J${trumpSuit[0]}-decl0`, `J${trumpSuit[0]}-decl1`]
                 : trumpIsPair
@@ -721,6 +764,10 @@ export default function GamePage() {
             players={players}
             onNextRound={() => socket.emit('start-next-round', { gameId })}
           />
+        )}
+
+        {disconnectedPlayerName && (
+          <PlayerDisconnectedModal playerName={disconnectedPlayerName} />
         )}
       </div>
     </div>

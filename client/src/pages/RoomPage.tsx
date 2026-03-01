@@ -91,17 +91,58 @@ export default function RoomPage() {
       });
     };
 
-    socket.on('player-joined', onPlayerJoined);
-    socket.on('player-left', onPlayerLeft);
-    socket.on('room-error', onRoomError);
-    socket.on('game-started', onGameStarted);
-
-    return () => {
-      socket.off('player-joined', onPlayerJoined);
-      socket.off('player-left', onPlayerLeft);
-      socket.off('room-error', onRoomError);
-      socket.off('game-started', onGameStarted);
+    const onRejoinSuccess = (data: {
+      game: { game_id: string; trump_number: string; trump_suit: string; round_king: string | null; trump_declarer: string | null; trump_count: number };
+      players: Array<Player & { hand: string[] }>;
+      currentDealTick: number;
+      phase: string;
+      kittyCards?: string[];
+      roundResult?: {
+        attackingPoints: number;
+        defendingPoints: number;
+        rankChanges: Record<string, { oldRank: number; newRank: number }>;
+        nextKingId: string;
+        winningTeam: 'attacking' | 'defending';
+        kittyBonus: number;
+        gameOver: boolean;
+      };
+      trickState: {
+        trickNum: number;
+        leaderId: string;
+        currentTurn: string;
+        playerOrder: string[];
+        plays: [string, string[]][];
+        committed: string[];
+        leaderShape: unknown | null;
+      } | null;
+    }) => {
+      navigate(`/room/${roomId}/game`, {
+        state: {
+          gameId: data.game.game_id,
+          players: data.players,
+          trumpNumber: data.game.trump_number,
+          trumpSuit: data.game.trump_suit,
+          roundKingId: data.game.round_king,
+          trumpDeclarerId: data.game.trump_declarer,
+          trumpIsPair: data.game.trump_count >= 2,
+          initialDealTick: data.currentDealTick,
+          phase: data.phase,
+          kittyCards: data.kittyCards ?? null,
+          roundResult: data.roundResult ?? null,
+          trickState: data.trickState ?? null,
+        },
+      });
     };
+
+    const handlers: [string, (...args: any[]) => void][] = [
+      ['player-joined', onPlayerJoined],
+      ['player-left', onPlayerLeft],
+      ['room-error', onRoomError],
+      ['game-started', onGameStarted],
+      ['rejoin-success', onRejoinSuccess],
+    ];
+    for (const [event, handler] of handlers) socket.on(event, handler);
+    return () => { for (const [event, handler] of handlers) socket.off(event, handler); };
   }, [socket]);
 
   const handleJoin = (displayName: string) => {
