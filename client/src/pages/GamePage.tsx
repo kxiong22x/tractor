@@ -691,7 +691,7 @@ export default function GamePage() {
         </div>
 
         {/* Row 2: Player seats */}
-        <div style={{ position: 'relative', flex: 1, minHeight: '22rem' }}>
+        <div style={{ position: 'relative', flex: 1, minHeight: 'min(22rem, 75vh)' }}>
           {players.map((player, i) => {
             const isDeclarer = trumpDeclarerId === player.player_id && trumpSuit !== 'NA';
             const declaredCards = isDeclarer && phase === 'declaration' && !kittyPickedUp

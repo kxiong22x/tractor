@@ -6,6 +6,8 @@ import PlayerForm from '../components/PlayerForm';
 import PlayerList from '../components/PlayerList';
 import RoomHeader from '../components/RoomHeader';
 import { API_BASE_URL } from '../config';
+import CenteredPage from '../components/CenteredPage';
+import PrimaryButton from '../components/PrimaryButton';
 
 // ── State & Action types ──────────────────────────────────────────────
 
@@ -156,47 +158,34 @@ export default function RoomPage() {
 
   if (error) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', textAlign: 'center' }}>
+      <CenteredPage>
         <h2>{error}</h2>
         <button onClick={() => navigate('/')} style={{ marginTop: '1rem', padding: '0.5rem 1.5rem', cursor: 'pointer' }}>
           Back to Home
         </button>
-      </div>
+      </CenteredPage>
     );
   }
 
   if (!joined) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', textAlign: 'center', maxWidth: '31.25rem', margin: '0 auto' }}>
+      <CenteredPage maxWidth="31.25rem">
         <h2>Room: {roomId}</h2>
         <PlayerForm onJoin={handleJoin} />
-      </div>
+      </CenteredPage>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', textAlign: 'center', maxWidth: '31.25rem', margin: '0 auto' }}>
+    <CenteredPage maxWidth="31.25rem">
       <RoomHeader roomId={roomId!} />
       <p>You need 4 players to start.</p>
       <PlayerList players={players} />
       {players.length >= 4 && (
         <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-          <button
-            onClick={handleStartGame}
-            style={{
-              padding: '0.75rem 2rem',
-              fontSize: '1.125rem',
-              cursor: 'pointer',
-              borderRadius: '0.5rem',
-              border: 'none',
-              backgroundColor: '#f7892e',
-              color: 'white',
-            }}
-          >
-            Start Game
-          </button>
+          <PrimaryButton onClick={handleStartGame}>Start Game</PrimaryButton>
         </div>
       )}
-    </div>
+    </CenteredPage>
   );
 }

@@ -1,3 +1,6 @@
+export const SMALL_SCALE = 4 / 5;
+export const MINI_SCALE = 3 / 5;
+
 export function parseCard(card: string): { suit: string; rank: string } {
   const [cardPart] = card.split('-');
   return { suit: cardPart[0], rank: cardPart.slice(1) };

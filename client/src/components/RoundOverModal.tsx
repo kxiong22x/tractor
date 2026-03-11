@@ -1,5 +1,6 @@
 import type { Player } from '../types';
 import { RANK_DISPLAY } from '../utils/cards';
+import ModalShell from './ModalShell';
 
 interface RoundResult {
   attackingPoints: number;
@@ -19,30 +20,7 @@ interface RoundOverModalProps {
 
 export default function RoundOverModal({ roundResult, players, onNextRound }: RoundOverModalProps) {
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 50,
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: '#fff',
-          borderRadius: '1rem',
-          padding: '2rem 2.5rem',
-          minWidth: '22.5rem',
-          textAlign: 'center',
-          color: '#333',
-        }}
-      >
+    <ModalShell>
         <h2 style={{ margin: '0 0 1rem', fontSize: '1.5rem' }}>
           {roundResult.gameOver ? 'Game Over!' : 'Round Over'}
         </h2>
@@ -103,7 +81,6 @@ export default function RoundOverModal({ roundResult, players, onNextRound }: Ro
             Next Round
           </button>
         )}
-      </div>
-    </div>
+    </ModalShell>
   );
 }

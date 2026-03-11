@@ -1,4 +1,7 @@
 import Card from './Card';
+import useWindowSize from '../hooks/useWindowSize';
+import { isMobile, calcHandRowSize } from '../utils/layout';
+import { SMALL_SCALE } from '../utils/cards';
 
 interface ActionButton {
   label: string;
@@ -20,10 +23,21 @@ interface HandDisplayProps {
 }
 
 export default function HandDisplay({ displayHand, stagedCards, isKittyPhase, isDeclarable, isClickableInTrickPhase, onCardClick, buttons, trumpSuit, trumpNumber }: HandDisplayProps) {
-  const ROW_SIZE = 25;
+  const { width, height } = useWindowSize();
+  const mobile = isMobile(width, height);
+
+  // On mobile use smaller cards; normal otherwise
+  const cardSize = mobile ? 'small' : 'normal';
+  const cardWidthRem = mobile ? 3.75 * SMALL_SCALE : 3.75;
+  const overlapRem = mobile ? 1.75 * SMALL_SCALE : 1.75;
+
+  // Subtract sidebar width (1rem collapsed) and hand padding (1.25rem * 2)
+  const availableWidthPx = width - (1 + 2.5) * 16;
+  const rowSize = calcHandRowSize(availableWidthPx, cardWidthRem, overlapRem);
+
   const rows: string[][] = [];
-  for (let i = 0; i < displayHand.length; i += ROW_SIZE) {
-    rows.push(displayHand.slice(i, i + ROW_SIZE));
+  for (let i = 0; i < displayHand.length; i += rowSize) {
+    rows.push(displayHand.slice(i, i + rowSize));
   }
 
   return (
@@ -78,17 +92,17 @@ export default function HandDisplay({ displayHand, stagedCards, isKittyPhase, is
                 key={`${card}-${rowIdx}-${i}`}
                 className="hand-card"
                 style={{
-                  marginLeft: i === 0 ? '0' : '-1.75rem',
+                  marginLeft: i === 0 ? '0' : `-${overlapRem}rem`,
                   marginTop: clickable || staged ? '-0.9375rem' : '0',
                   cursor: clickable ? 'pointer' : 'default',
                   transition: 'margin-top 0.2s',
                 }}
-              onClick={() => onCardClick(card)}
-            >
-              <Card card={card} faceUp={true} selected={staged} trumpSuit={trumpSuit} trumpNumber={trumpNumber} />
-            </div>
-          );
-        })}
+                onClick={() => onCardClick(card)}
+              >
+                <Card card={card} faceUp={true} size={cardSize} selected={staged} trumpSuit={trumpSuit} trumpNumber={trumpNumber} />
+              </div>
+            );
+          })}
         </div>
       ))}
     </div>
