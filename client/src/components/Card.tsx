@@ -1,18 +1,19 @@
-import { parseCard, getDisplayRank, getSuitSymbol, isRed, SMALL_SCALE, MINI_SCALE } from '../utils/cards';
+import { parseCard, getDisplayRank, getSuitSymbol, isRed, SMALL_SCALE, MINI_SCALE, CARD_WIDTH_REM, CARD_HEIGHT_REM } from '../utils/cards';
 
 interface CardProps {
   card: string;
   faceUp: boolean;
   size?: 'normal' | 'mini' | 'small';
+  scale?: number;
   selected?: boolean;
   trumpSuit?: string;
   trumpNumber?: string;
 }
 
-export default function Card({ card, faceUp, size = 'normal', selected = false, trumpSuit, trumpNumber }: CardProps) {
-  const sizeMultiplier = size === 'mini' ? MINI_SCALE : size === 'small' ? SMALL_SCALE : 1;
-  const w = `${3.75 * sizeMultiplier}rem`;
-  const h = `${5.25 * sizeMultiplier}rem`;
+export default function Card({ card, faceUp, size = 'normal', scale = 1, selected = false, trumpSuit, trumpNumber }: CardProps) {
+  const sizeMultiplier = (size === 'mini' ? MINI_SCALE : size === 'small' ? SMALL_SCALE : 1) * scale;
+  const w = `${CARD_WIDTH_REM * sizeMultiplier}rem`;
+  const h = `${CARD_HEIGHT_REM * sizeMultiplier}rem`;
   const radius = `${0.375 * sizeMultiplier}rem`;
   const borderPx = size === 'normal' ? 2 : 1;
 
@@ -30,6 +31,7 @@ export default function Card({ card, faceUp, size = 'normal', selected = false, 
     return (
       <div
         style={{
+          boxSizing: 'border-box',
           width: w,
           height: h,
           borderRadius: radius,
@@ -50,6 +52,7 @@ export default function Card({ card, faceUp, size = 'normal', selected = false, 
     return (
       <div
         style={{
+          boxSizing: 'border-box',
           position: 'relative',
           width: w,
           height: h,
@@ -96,6 +99,7 @@ export default function Card({ card, faceUp, size = 'normal', selected = false, 
   return (
     <div
       style={{
+        boxSizing: 'border-box',
         position: 'relative',
         width: w,
         height: h,

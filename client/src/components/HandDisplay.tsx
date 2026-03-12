@@ -1,7 +1,4 @@
 import Card from './Card';
-import useWindowSize from '../hooks/useWindowSize';
-import { isMobile, calcHandRowSize } from '../utils/layout';
-import { SMALL_SCALE } from '../utils/cards';
 
 interface ActionButton {
   label: string;
@@ -20,20 +17,12 @@ interface HandDisplayProps {
   buttons: ActionButton[];
   trumpSuit: string;
   trumpNumber: string;
+  rowSize: number;
+  cardScale: number;
+  overlapRem: number;
 }
 
-export default function HandDisplay({ displayHand, stagedCards, isKittyPhase, isDeclarable, isClickableInTrickPhase, onCardClick, buttons, trumpSuit, trumpNumber }: HandDisplayProps) {
-  const { width, height } = useWindowSize();
-  const mobile = isMobile(width, height);
-
-  // On mobile use smaller cards; normal otherwise
-  const cardSize = mobile ? 'small' : 'normal';
-  const cardWidthRem = mobile ? 3.75 * SMALL_SCALE : 3.75;
-  const overlapRem = mobile ? 1.75 * SMALL_SCALE : 1.75;
-
-  // Subtract sidebar width (1rem collapsed) and hand padding (1.25rem * 2)
-  const availableWidthPx = width - (1 + 2.5) * 16;
-  const rowSize = calcHandRowSize(availableWidthPx, cardWidthRem, overlapRem);
+export default function HandDisplay({ displayHand, stagedCards, isKittyPhase, isDeclarable, isClickableInTrickPhase, onCardClick, buttons, trumpSuit, trumpNumber, rowSize, cardScale, overlapRem }: HandDisplayProps) {
 
   const rows: string[][] = [];
   for (let i = 0; i < displayHand.length; i += rowSize) {
@@ -99,7 +88,7 @@ export default function HandDisplay({ displayHand, stagedCards, isKittyPhase, is
                 }}
                 onClick={() => onCardClick(card)}
               >
-                <Card card={card} faceUp={true} size={cardSize} selected={staged} trumpSuit={trumpSuit} trumpNumber={trumpNumber} />
+                <Card card={card} faceUp={true} scale={cardScale} selected={staged} trumpSuit={trumpSuit} trumpNumber={trumpNumber} />
               </div>
             );
           })}

@@ -1,15 +1,15 @@
 import { useRef, useEffect, useState } from 'react';
 import { type LogEntry, CardSpan } from '../utils/log';
-import { isMobile } from '../utils/layout';
 export type { LogEntry };
 
 interface GameLogProps {
   log: LogEntry[];
+  isVisible: boolean;
+  onToggle: (visible: boolean) => void;
 }
 
-export default function GameLog({ log }: GameLogProps) {
+export default function GameLog({ log, isVisible, onToggle }: GameLogProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(() => !isMobile(window.innerWidth, window.innerHeight));
   const [tabHovered, setTabHovered] = useState(false);
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function GameLog({ log }: GameLogProps) {
         }}>
           Log
           <button
-            onClick={() => setIsVisible(false)}
+            onClick={() => onToggle(false)}
             style={{
               background: 'none',
               border: 'none',
@@ -63,7 +63,7 @@ export default function GameLog({ log }: GameLogProps) {
             ×
           </button>
         </div>
-        <div style={{ overflowY: 'auto', flex: 1, padding: '0.25rem 0.4rem' }}>
+        <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, padding: '0.25rem 0.4rem' }}>
           {log.map((entry, i) => {
             if (entry.type === 'trick') {
               return (
@@ -117,7 +117,7 @@ export default function GameLog({ log }: GameLogProps) {
       {!isVisible && (
         <div style={{ width: '1rem', flexShrink: 0, height: '100vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
           <button
-            onClick={() => setIsVisible(true)}
+            onClick={() => onToggle(true)}
             onMouseEnter={() => setTabHovered(true)}
             onMouseLeave={() => setTabHovered(false)}
             style={{

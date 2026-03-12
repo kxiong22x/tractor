@@ -35,7 +35,7 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
 
     const { suit, rank } = parseCard(card);
 
-    const isFirstRound = game.round_number === 1;
+    const kingUnassigned = game.round_king === null;
 
     const hand = parseHand(player);
 
@@ -50,14 +50,14 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
       }
       const jokerTrumpSuit = rank === 'B' ? 'BJ' : 'SJ';
       updateTrumpDeclaration(gameId, jokerTrumpSuit, player.player_id, 2);
-      if (isFirstRound) {
+      if (kingUnassigned) {
         updateRoundKing(gameId, player.player_id);
       }
       io.to(game.room_id).emit('trump-declared', {
         trumpSuit: jokerTrumpSuit,
         declarerId: player.player_id,
         isPair: true,
-        roundKingId: isFirstRound ? player.player_id : game.round_king,
+        roundKingId: kingUnassigned ? player.player_id : game.round_king,
       });
       return;
     }
@@ -90,25 +90,25 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
           return;
         }
         updateTrumpDeclaration(gameId, suit, player.player_id, 2);
-        if (isFirstRound) {
+        if (kingUnassigned) {
           updateRoundKing(gameId, player.player_id);
         }
         io.to(game.room_id).emit('trump-declared', {
           trumpSuit: suit,
           declarerId: player.player_id,
           isPair: true,
-          roundKingId: isFirstRound ? player.player_id : game.round_king,
+          roundKingId: kingUnassigned ? player.player_id : game.round_king,
         });
       } else {
         updateTrumpDeclaration(gameId, suit, player.player_id, 1);
-        if (isFirstRound) {
+        if (kingUnassigned) {
           updateRoundKing(gameId, player.player_id);
         }
         io.to(game.room_id).emit('trump-declared', {
           trumpSuit: suit,
           declarerId: player.player_id,
           isPair: false,
-          roundKingId: isFirstRound ? player.player_id : game.round_king,
+          roundKingId: kingUnassigned ? player.player_id : game.round_king,
         });
       }
     } else if (game.trump_count === 1) {
@@ -119,14 +119,14 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
         });
       } else {
         updateTrumpDeclaration(gameId, suit, player.player_id, 2);
-        if (isFirstRound) {
+        if (kingUnassigned) {
           updateRoundKing(gameId, player.player_id);
         }
         io.to(game.room_id).emit('trump-declared', {
           trumpSuit: suit,
           declarerId: player.player_id,
           isPair: true,
-          roundKingId: isFirstRound ? player.player_id : game.round_king,
+          roundKingId: kingUnassigned ? player.player_id : game.round_king,
         });
       }
     }

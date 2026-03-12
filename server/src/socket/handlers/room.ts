@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { getRoom, removeRoom } from '../../room.queries';
-import { addPlayer, removePlayerBySocketId, getPlayersInRoom, getPlayerCountInRoom, getPlayerBySocketId, removePlayer, setPlayerDisconnected, setPlayerReconnected, getDisconnectedPlayerByName } from '../../player.queries';
+import { addPlayer, removePlayerBySocketId, getPlayersInRoom, getPlayerCountInRoom, getPlayerBySocketId, removePlayer, setPlayerDisconnected, setPlayerReconnected, getDisconnectedPlayerByName, updatePlayerRank } from '../../player.queries';
 import { getGameByRoomId } from '../../game.queries';
 import { JoinRoomPayload } from '../../types';
 import { MAX_PLAYERS } from '../../constants';
@@ -10,7 +10,7 @@ import { startTrick } from './trick';
 
 export function registerRoomHandlers(io: Server, socket: Socket) {
   socket.on('join-room', (payload: JoinRoomPayload) => {
-    const { roomId, displayName } = payload;
+    const { roomId, displayName, startingRank } = payload;
 
     const room = getRoom(roomId);
     if (!room) {
@@ -119,11 +119,18 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       return;
     }
 
-    const player = addPlayer(roomId, displayName, socket.id);
+    const player = addPlayer(roomId, displayName, socket.id, startingRank);
     socket.join(roomId);
 
     const players = getPlayersInRoom(roomId);
     io.to(roomId).emit('player-joined', { player, players });
+  });
+
+  socket.on('set-starting-rank', (payload: { roomId: string; rank: number }) => {
+    const player = getPlayerBySocketId(socket.id);
+    if (!player) return;
+    const rank = Math.max(2, Math.min(14, Math.round(payload.rank)));
+    updatePlayerRank(player.player_id, rank);
   });
 
   socket.on('disconnect', () => {

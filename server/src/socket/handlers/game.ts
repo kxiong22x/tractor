@@ -40,9 +40,13 @@ export function registerGameHandlers(io: Server, socket: Socket) {
 
     const trumpNumber = String(getPlayerRank(gamePlayers[0].player_id));
 
+    // Pre-assign king to first player if any player has a non-default rank
+    const allRankTwo = gamePlayers.every(p => p.rank === 2);
+    const preassignedKingId = allRankTwo ? null : gamePlayers[0].player_id;
+
     const { hands, kitty } = dealCards(gamePlayers.length);
 
-    const game = createGame(roomId, kitty, null, trumpNumber);
+    const game = createGame(roomId, kitty, preassignedKingId, trumpNumber);
     for (let i = 0; i < gamePlayers.length; i++) {
       updatePlayerHand(gamePlayers[i].player_id, hands[i]);
     }
@@ -57,7 +61,7 @@ export function registerGameHandlers(io: Server, socket: Socket) {
       players: playersWithHands,
       trumpNumber,
       trumpSuit: 'NA',
-      roundKingId: null,
+      roundKingId: preassignedKingId,
       kittySize: kitty.length,
     });
 

@@ -23,9 +23,10 @@ interface PlayerSeatProps {
   trumpSuit: string;
   trumpNumber: string;
   buttons?: ActionButton[];
+  cardScale?: number;
 }
 
-export default function PlayerSeat({ player, position, isCurrentPlayer, isRoundKing, declaredCards, isBeingDealt, playedCards, isCurrentTurn, rank, trumpSuit, trumpNumber, buttons }: PlayerSeatProps) {
+export default function PlayerSeat({ player, position, isCurrentPlayer, isRoundKing, declaredCards, isBeingDealt, playedCards, isCurrentTurn, rank, trumpSuit, trumpNumber, buttons, cardScale = 1 }: PlayerSeatProps) {
   const cardSide = position === 'bottom' ? 'above'
     : position === 'left' ? 'right'
     : position === 'right' ? 'left'
@@ -51,7 +52,7 @@ export default function PlayerSeat({ player, position, isCurrentPlayer, isRoundK
         {/* Played cards display — toward center of screen */}
         <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', alignItems: 'flex-end', ...(isHorizontal ? { minWidth: '2.25rem' } : { minHeight: '3.15rem' }) }}>
           {playedCards && playedCards.length > 0 && playedCards.map((card) => (
-            <Card key={card} card={card} faceUp={true} size="mini" trumpSuit={trumpSuit} trumpNumber={trumpNumber} />
+            <Card key={card} card={card} faceUp={true} size="mini" scale={cardScale} trumpSuit={trumpSuit} trumpNumber={trumpNumber} />
           ))}
         </div>
         <div
@@ -63,15 +64,15 @@ export default function PlayerSeat({ player, position, isCurrentPlayer, isRoundK
           }}
         >
           {buttons && buttons.length > 0 && (
-            <div style={{ position: 'absolute', right: '100%', paddingRight: '0.5rem', display: 'flex', gap: '0.375rem' }}>
+            <div style={{ position: 'absolute', right: '100%', paddingRight: `${0.5 * cardScale}rem`, display: 'flex', gap: `${0.375 * cardScale}rem` }}>
               {buttons.map((btn) => (
                 <button
                   key={btn.label}
                   onClick={btn.onClick}
                   disabled={!btn.enabled}
                   style={{
-                    padding: '0.4rem 1rem',
-                    fontSize: '0.875rem',
+                    padding: `${0.4 * cardScale}rem ${1 * cardScale}rem`,
+                    fontSize: `${0.875 * cardScale}rem`,
                     fontWeight: 'bold',
                     backgroundColor: btn.enabled ? (btn.color ?? '#4CAF50') : '#888',
                     color: 'white',
@@ -89,12 +90,12 @@ export default function PlayerSeat({ player, position, isCurrentPlayer, isRoundK
           )}
           <div
             style={{
-              padding: '0.75rem 1.25rem',
+              padding: `${0.75 * cardScale}rem ${1.25 * cardScale}rem`,
               backgroundColor: isCurrentPlayer ? '#f7892e' : '#bbbbbb',
               color: 'white',
               borderRadius: '0.5rem',
               textAlign: 'center',
-              minWidth: '5rem',
+              minWidth: `${5 * cardScale}rem`,
               outline: isCurrentTurn
                 ? '0.1875rem solid #ffd700'
                 : isBeingDealt
@@ -104,15 +105,15 @@ export default function PlayerSeat({ player, position, isCurrentPlayer, isRoundK
               transition: 'outline 0.2s',
             }}
           >
-            <div style={{ fontWeight: 'bold', fontSize: '0.875rem' }}>{player.display_name} {isRoundKing && '\ud83d\udc51'}</div>
+            <div style={{ fontWeight: 'bold', fontSize: `${0.875 * cardScale}rem` }}>{player.display_name} {isRoundKing && '\ud83d\udc51'}</div>
             {rank != null && (
-              <div style={{ fontSize: '0.6875rem', opacity: 0.7, marginTop: '0.0625rem' }}>Rank: {RANK_DISPLAY[rank] ?? rank}</div>
+              <div style={{ fontSize: `${0.6875 * cardScale}rem`, opacity: 0.7, marginTop: '0.0625rem' }}>Rank: {RANK_DISPLAY[rank] ?? rank}</div>
             )}
           </div>
           {declaredCards && declaredCards.length > 0 && (
             <div style={{ display: 'flex', gap: '0.125rem' }}>
               {declaredCards.map((card) => (
-                <Card key={card} card={card} faceUp={true} size="mini" trumpSuit={trumpSuit} trumpNumber={trumpNumber} />
+                <Card key={card} card={card} faceUp={true} size="mini" scale={cardScale} trumpSuit={trumpSuit} trumpNumber={trumpNumber} />
               ))}
             </div>
           )}

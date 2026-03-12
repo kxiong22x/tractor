@@ -18,6 +18,7 @@ export interface Player {
 export interface JoinRoomPayload {
   roomId: string;
   displayName: string;
+  startingRank?: number;
 }
 
 export interface PlayerJoinedEvent {

@@ -6,9 +6,10 @@ interface KittyAreaProps {
   onKittyCardClick: (card: string) => void;
   trumpSuit: string;
   trumpNumber: string;
+  cardScale?: number;
 }
 
-export default function KittyArea({ isKittyPhase, kittyCards, onKittyCardClick, trumpSuit, trumpNumber }: KittyAreaProps) {
+export default function KittyArea({ isKittyPhase, kittyCards, onKittyCardClick, trumpSuit, trumpNumber, cardScale = 1 }: KittyAreaProps) {
   if (!isKittyPhase) return null;
 
   return (
@@ -20,7 +21,7 @@ export default function KittyArea({ isKittyPhase, kittyCards, onKittyCardClick, 
           style={{ cursor: 'pointer' }}
           onClick={() => onKittyCardClick(card)}
         >
-          <Card card={card} faceUp={true} trumpSuit={trumpSuit} trumpNumber={trumpNumber} />
+          <Card card={card} faceUp={true} scale={cardScale} trumpSuit={trumpSuit} trumpNumber={trumpNumber} />
         </div>
       ))}
     </div>

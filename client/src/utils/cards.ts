@@ -1,5 +1,7 @@
 export const SMALL_SCALE = 4 / 5;
-export const MINI_SCALE = 3 / 5;
+export const MINI_SCALE = 3.5 / 5;
+export const CARD_WIDTH_REM = 4.5;
+export const CARD_HEIGHT_REM = 6.3;
 
 export function parseCard(card: string): { suit: string; rank: string } {
   const [cardPart] = card.split('-');
@@ -17,6 +19,8 @@ export const RANK_DISPLAY: Record<number, string> = {
   2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9', 10: '10',
   11: 'J', 12: 'Q', 13: 'K', 14: 'A',
 };
+
+export const STARTING_RANK_OPTIONS: number[] = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 
 export const SUIT_ORDER: Record<string, number> = { S: 0, H: 1, C: 2, D: 3, J: 4 };
 

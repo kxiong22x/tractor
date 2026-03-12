@@ -2,13 +2,13 @@ import db from './db';
 import { Player } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
-export function addPlayer(roomId: string, displayName: string, socketId: string): Player {
+export function addPlayer(roomId: string, displayName: string, socketId: string, rank: number = 2): Player {
   const playerId = uuidv4();
 
   const stmt = db.prepare(
-    'INSERT INTO players (player_id, display_name, room_id, socket_id) VALUES (?, ?, ?, ?)'
+    'INSERT INTO players (player_id, display_name, room_id, socket_id, rank) VALUES (?, ?, ?, ?, ?)'
   );
-  stmt.run(playerId, displayName, roomId, socketId);
+  stmt.run(playerId, displayName, roomId, socketId, rank);
 
   return db.prepare('SELECT * FROM players WHERE player_id = ?').get(playerId) as Player;
 }

@@ -1,4 +1,4 @@
-import { useReducer, useEffect } from 'react';
+import { useReducer, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../hooks/useSocket';
 import type { Player } from '../types';
@@ -8,6 +8,7 @@ import RoomHeader from '../components/RoomHeader';
 import { API_BASE_URL } from '../config';
 import CenteredPage from '../components/CenteredPage';
 import PrimaryButton from '../components/PrimaryButton';
+import { STARTING_RANK_OPTIONS, RANK_DISPLAY } from '../utils/cards';
 
 // ── State & Action types ──────────────────────────────────────────────
 
@@ -61,6 +62,7 @@ export default function RoomPage() {
 
   const [state, dispatch] = useReducer(roomReducer, initialState);
   const { joined, players, error } = state;
+  const [startingRank, setStartingRank] = useState(2);
 
   useEffect(() => {
     // Fetch initial room data
@@ -86,10 +88,10 @@ export default function RoomPage() {
       dispatch({ type: 'ROOM_ERROR', message: data.message });
     };
 
-    const onGameStarted = (data: { gameId: string; players: Array<Player & { hand: string[] }>; trumpNumber: string; trumpSuit: string }) => {
+    const onGameStarted = (data: { gameId: string; players: Array<Player & { hand: string[] }>; trumpNumber: string; trumpSuit: string; roundKingId: string | null }) => {
       console.log('game-started received:', data);
       navigate(`/room/${roomId}/game`, {
-        state: { gameId: data.gameId, players: data.players, trumpNumber: data.trumpNumber, trumpSuit: data.trumpSuit },
+        state: { gameId: data.gameId, players: data.players, trumpNumber: data.trumpNumber, trumpSuit: data.trumpSuit, roundKingId: data.roundKingId },
       });
     };
 
@@ -148,8 +150,13 @@ export default function RoomPage() {
   }, [socket]);
 
   const handleJoin = (displayName: string) => {
-    socket.emit('join-room', { roomId, displayName });
+    socket.emit('join-room', { roomId, displayName, startingRank: 2 });
     dispatch({ type: 'JOINED' });
+  };
+
+  const handleRankChange = (rank: number) => {
+    setStartingRank(rank);
+    socket.emit('set-starting-rank', { roomId, rank });
   };
 
   const handleStartGame = () => {
@@ -181,6 +188,25 @@ export default function RoomPage() {
       <RoomHeader roomId={roomId!} />
       <p>You need 4 players to start.</p>
       <PlayerList players={players} />
+      <div style={{ marginTop: '1rem' }}>
+        <label style={{ marginRight: '0.5rem' }}>Your starting rank:</label>
+        <select
+          value={startingRank}
+          onChange={(e) => handleRankChange(Number(e.target.value))}
+          style={{
+            padding: '0.4rem 0.75rem',
+            fontSize: '1rem',
+            borderRadius: '0.375rem',
+            border: '0.0625rem solid black',
+            backgroundColor: 'white',
+            color: 'black',
+          }}
+        >
+          {STARTING_RANK_OPTIONS.map((r) => (
+            <option key={r} value={r}>{RANK_DISPLAY[r]}</option>
+          ))}
+        </select>
+      </div>
       {players.length >= 4 && (
         <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
           <PrimaryButton onClick={handleStartGame}>Start Game</PrimaryButton>

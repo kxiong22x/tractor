@@ -13,6 +13,9 @@ import HandDisplay from '../components/HandDisplay';
 import GameLog, { type LogEntry } from '../components/GameLog';
 import { parseCard, sortHand } from '../utils/cards';
 import { cardsDealtForPlayer, getPositionOrder } from '../utils/player';
+import { isMobile, calcHandRowSize, calcCardScale } from '../utils/layout';
+import { CARD_WIDTH_REM, CARD_HEIGHT_REM, MINI_SCALE } from '../utils/cards';
+import useWindowSize from '../hooks/useWindowSize';
 
 interface GamePlayer extends Player {
   hand: string[];
@@ -313,7 +316,21 @@ export default function GamePage() {
   const [roundResult, setRoundResult] = useState<RoundResult | null>(location.state?.roundResult ?? null);
   const [throwError, setThrowError] = useState<string | null>(null);
   const [disconnectedPlayerName, setDisconnectedPlayerName] = useState<string | null>(null);
+  const [logVisible, setLogVisible] = useState(() => !isMobile(window.innerWidth, window.innerHeight));
   const kittySize = players.length === 6 ? 6 : 8;
+
+  const { width, height } = useWindowSize();
+  const cardScale = calcCardScale(width, height, logVisible);
+  const cardWidthRem = CARD_WIDTH_REM * cardScale;
+  const overlapRem = 1.5 * cardScale;
+  // Min center height so gap between top/bottom player card areas = 1 mini card height
+  // Derived from: (1 - 2*0.03)*H - 2*(nameTagH + 0.25 + miniCardH) = miniCardH
+  // nameTagH ≈ 3.9rem (2×0.75rem padding + name line + rank line in PlayerSeat)
+  const miniCardHeightRem = CARD_HEIGHT_REM * MINI_SCALE * cardScale;
+  const nameTagHeightRem = 2 * 0.75 + 0.875 * 1.5 + 0.0625 + 0.6875 * 1.5 + 0.2;
+  const centerMinHeightRem = (3 * miniCardHeightRem + 2 * nameTagHeightRem + 0.5) / 0.94;
+  const availableWidthPx = width - ((logVisible ? 10 : 1) + 2.5) * 16;
+  const handRowSize = calcHandRowSize(availableWidthPx, cardWidthRem, overlapRem);
 
   // Dealing animation state — driven by server deal-tick events
   const [globalDealTick, setGlobalDealTick] = useState(location.state?.initialDealTick ?? 0);
@@ -659,7 +676,7 @@ export default function GamePage() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', overflow: 'hidden', backgroundColor: '#faf2e4' }}>
-      <GameLog log={log} />
+      <GameLog log={log} isVisible={logVisible} onToggle={setLogVisible} />
       <div
         style={{
           flex: 1,
@@ -676,6 +693,7 @@ export default function GamePage() {
             trumpNumber={trumpNumber}
             trumpSuit={trumpSuit}
             trickPhase={phase === 'trick'}
+            cardScale={cardScale}
             attackingPoints={(() => {
               if (!roundKingId) return 0;
               const kingIdx = players.findIndex(p => p.player_id === roundKingId);
@@ -691,7 +709,7 @@ export default function GamePage() {
         </div>
 
         {/* Row 2: Player seats */}
-        <div style={{ position: 'relative', flex: 1, minHeight: 'min(22rem, 75vh)' }}>
+        <div style={{ position: 'relative', flex: 1, minHeight: `min(${centerMinHeightRem.toFixed(2)}rem, 75vh)` }}>
           {players.map((player, i) => {
             const isDeclarer = trumpDeclarerId === player.player_id && trumpSuit !== 'NA';
             const declaredCards = isDeclarer && phase === 'declaration' && !kittyPickedUp
@@ -716,6 +734,7 @@ export default function GamePage() {
               trumpSuit={trumpSuit}
               trumpNumber={trumpNumber}
               buttons={player.socket_id === currentSocketId ? nameTagButtons : undefined}
+              cardScale={cardScale}
             />
           );
         })}
@@ -737,6 +756,7 @@ export default function GamePage() {
             onKittyCardClick={handleKittyCardClick}
             trumpSuit={trumpSuit}
             trumpNumber={trumpNumber}
+            cardScale={cardScale}
           />
           </div>
         )}
@@ -750,6 +770,9 @@ export default function GamePage() {
           buttons={handButtons}
           trumpSuit={trumpSuit}
           trumpNumber={trumpNumber}
+          rowSize={handRowSize}
+          cardScale={cardScale}
+          overlapRem={overlapRem}
         />
       </div>
 
