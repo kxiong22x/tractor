@@ -1,4 +1,7 @@
 import { SUITS, RANKS } from './constants';
+import { parseCard } from '../../../shared/cards';
+
+export { parseCard };
 
 /** Returns kitty size: 6 for 6 players, 8 otherwise. */
 export function getKittySize(numPlayers: number): number {
@@ -8,11 +11,6 @@ export function getKittySize(numPlayers: number): number {
 /** Parse a player's hand from its JSON-serialized DB form. */
 export function parseHand(player: { hand: string | null }): string[] {
   return player.hand ? JSON.parse(player.hand as unknown as string) : [];
-}
-
-export function parseCard(card: string): { suit: string; rank: string } {
-  const [cardPart] = card.split('-');
-  return { suit: cardPart[0], rank: cardPart.slice(1) };
 }
 
 /** Returns the point value of a single card (5→5, 10→10, K→10, else 0). */

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect } from 'react';
 import { parseCard, getDisplayRank, getSuitSymbol, isRed } from '../utils/cards';
 
 export type LogEntry =
@@ -22,7 +22,6 @@ interface GameLogProps {
 
 export default function GameLog({ log, isVisible, onToggle }: GameLogProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
-  const [tabHovered, setTabHovered] = useState(false);
 
   useEffect(() => {
     if (isVisible) {
@@ -31,57 +30,26 @@ export default function GameLog({ log, isVisible, onToggle }: GameLogProps) {
   }, [log, isVisible]);
 
   return (
-    <div style={{ display: 'flex', flexShrink: 0, height: '100vh' }}>
+    <div className="game-log">
 
-      <div style={{
-        width: isVisible ? '10rem' : '0',
-        overflow: 'hidden',
-        transition: 'width 250ms ease',
-        height: '100vh',
-        backgroundColor: '#f6f6f6',
-        color: '#222',
-        fontFamily: 'monospace',
-        fontSize: '0.7rem',
-        display: 'flex',
-        flexDirection: 'column',
-        boxSizing: 'border-box',
-        flexShrink: 0,
-      }}>
-        <div style={{
-          fontWeight: 'bold', fontSize: '0.8rem',
-          borderBottom: '1px solid #ccc',
-          padding: '0.5rem 0.4rem 0.25rem',
-          flexShrink: 0,
-          whiteSpace: 'nowrap',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
+      <div className="game-log__panel" style={{ width: isVisible ? '10rem' : '0' }}>
+        <div className="game-log__header">
           Log
           <button
             onClick={() => onToggle(false)}
-            style={{
-              background: 'none',
-              border: 'none',
-              outline: 'none',
-              cursor: 'pointer',
-              color: '#888',
-              fontSize: '0.9rem',
-              padding: '0 0 0 0.25rem',
-              lineHeight: 1,
-            }}
+            className="game-log__close-btn"
             aria-label="Collapse log"
           >
             ×
           </button>
         </div>
-        <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, padding: '0.25rem 0.4rem' }}>
+        <div className="game-log__body">
           {log.map((entry, i) => {
             if (entry.type === 'trick') {
               return (
                 <div key={i}>
-                  {i !== 0 && <hr style={{ border: 'none', borderTop: '1px dashed #bbb', margin: '0.4rem 0' }} />}
-                  <div style={{ color: '#5f5f5f', fontWeight: 'bold' }}>
+                  {i !== 0 && <hr className="game-log__divider" />}
+                  <div className="game-log__entry--muted" style={{ fontWeight: 'bold' }}>
                     Trick #{entry.trickNum}
                   </div>
                 </div>
@@ -89,7 +57,7 @@ export default function GameLog({ log, isVisible, onToggle }: GameLogProps) {
             }
             if (entry.type === 'winner') {
               return (
-                <div key={i} style={{ color: '#5f5f5f', fontStyle: 'italic' }}>
+                <div key={i} className="game-log__entry--muted-italic">
                   {entry.playerName} wins
                 </div>
               );
@@ -97,7 +65,7 @@ export default function GameLog({ log, isVisible, onToggle }: GameLogProps) {
             if (entry.type === 'declare') {
               return (
                 <div key={i}>
-                  <span style={{ color: '#5f5f5f' }}>{entry.playerName}</span>
+                  <span className="game-log__entry--muted">{entry.playerName}</span>
                   {' declared '}
                   {entry.cards.map((card, j) => (
                     <span key={j}>{j > 0 ? ' ' : ''}<CardSpan card={card} /></span>
@@ -107,14 +75,14 @@ export default function GameLog({ log, isVisible, onToggle }: GameLogProps) {
             }
             if (entry.type === 'undo') {
               return (
-                <div key={i} style={{ color: '#5f5f5f', fontStyle: 'italic' }}>
+                <div key={i} className="game-log__entry--muted-italic">
                   {entry.playerName} undid play
                 </div>
               );
             }
             return (
               <div key={i}>
-                <span style={{ color: '#5f5f5f' }}>{entry.playerName}</span>
+                <span className="game-log__entry--muted">{entry.playerName}</span>
                 {': '}
                 {entry.cards.map((card, j) => (
                   <span key={j}>{j > 0 ? ' ' : ''}<CardSpan card={card} /></span>
@@ -127,27 +95,10 @@ export default function GameLog({ log, isVisible, onToggle }: GameLogProps) {
       </div>
 
       {!isVisible && (
-        <div style={{ width: '1rem', flexShrink: 0, height: '100vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+        <div className="game-log__tab-wrapper">
           <button
             onClick={() => onToggle(true)}
-            onMouseEnter={() => setTabHovered(true)}
-            onMouseLeave={() => setTabHovered(false)}
-            style={{
-              width: '1rem',
-              height: '2rem',
-              backgroundColor: tabHovered ? '#d0d0d0' : '#e8e8e8',
-              border: '1px solid #ccc',
-              outline: 'none',
-              borderRadius: '0 4px 4px 0',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.7rem',
-              color: '#666',
-              padding: 0,
-              fontFamily: 'monospace',
-            }}
+            className="game-log__tab"
             aria-label="Expand log"
           >
             ›

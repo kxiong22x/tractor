@@ -1,4 +1,4 @@
-import { parseCard, getDisplayRank, getSuitSymbol, isRed, SMALL_SCALE, MINI_SCALE, CARD_WIDTH_REM, CARD_HEIGHT_REM } from '../utils/cards';
+import { parseCard, isTrumpCard, getDisplayRank, getSuitSymbol, isRed, SMALL_SCALE, MINI_SCALE, CARD_WIDTH_REM, CARD_HEIGHT_REM } from '../utils/cards';
 
 interface CardProps {
   card: string;
@@ -17,15 +17,8 @@ export default function Card({ card, faceUp, size = 'normal', scale = 1, selecte
   const radius = `${0.375 * sizeMultiplier}rem`;
   const borderPx = size === 'normal' ? 2 : 1;
 
-  const showTrumpMarker = (() => {
-    if (!faceUp) return false;
-    if (!trumpSuit || !trumpNumber) return false;
-    const { suit, rank } = parseCard(card);
-    if (suit === 'J') return true;
-    if (rank === trumpNumber) return true;
-    if (trumpSuit !== 'NA' && trumpSuit !== 'BJ' && trumpSuit !== 'SJ' && suit === trumpSuit) return true;
-    return false;
-  })();
+  const showTrumpMarker =
+    faceUp && !!trumpSuit && !!trumpNumber && isTrumpCard(card, trumpSuit, trumpNumber);
 
   if (!faceUp) {
     return (
@@ -44,7 +37,7 @@ export default function Card({ card, faceUp, size = 'normal', scale = 1, selecte
   }
 
   const { suit, rank } = parseCard(card);
-  const color = isRed(suit, rank) ? '#d32f2f' : '#222';
+  const color = isRed(suit, rank) ? 'var(--color-card-red)' : '#222';
 
   // Joker cards use full image
   if (suit === 'J') {

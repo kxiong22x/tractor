@@ -1,7 +1,8 @@
 import { useReducer, useEffect, useState } from 'react';
+import { EVENTS } from '../../../shared/events';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../hooks/useSocket';
-import type { Player } from '../types';
+import { mapPlayer, mapGamePlayer, type RawPlayer, type Player } from '../types';
 import PlayerForm from '../components/PlayerForm';
 import PlayerList from '../components/PlayerList';
 import RoomHeader from '../components/RoomHeader';
@@ -71,36 +72,37 @@ export default function RoomPage() {
         if (!res.ok) throw new Error('Room not found');
         return res.json();
       })
-      .then((data) => dispatch({ type: 'PLAYERS_LOADED', players: data.players }))
+      .then((data) => dispatch({ type: 'PLAYERS_LOADED', players: (data.players as RawPlayer[]).map(mapPlayer) }))
       .catch(() => dispatch({ type: 'LOAD_ERROR', message: 'Room not found' }));
   }, [roomId]);
 
   useEffect(() => {
-    const onPlayerJoined = (data: { player: Player; players: Player[] }) => {
-      dispatch({ type: 'PLAYER_JOINED', players: data.players });
+    const onPlayerJoined = (data: { player: RawPlayer; players: RawPlayer[] }) => {
+      dispatch({ type: 'PLAYER_JOINED', players: data.players.map(mapPlayer) });
     };
 
-    const onPlayerLeft = (data: { playerId: string; players: Player[] }) => {
-      dispatch({ type: 'PLAYER_LEFT', players: data.players });
+    const onPlayerLeft = (data: { playerId: string; players: RawPlayer[] }) => {
+      dispatch({ type: 'PLAYER_LEFT', players: data.players.map(mapPlayer) });
     };
 
     const onRoomError = (data: { message: string }) => {
       dispatch({ type: 'ROOM_ERROR', message: data.message });
     };
 
-    const onGameStarted = (data: { gameId: string; players: Array<Player & { hand: string[] }>; trumpNumber: string; trumpSuit: string; roundKingId: string | null }) => {
+    const onGameStarted = (data: { gameId: string; players: Array<RawPlayer & { hand: string[] }>; trumpNumber: string; trumpSuit: string; roundKingId: string | null }) => {
       console.log('game-started received:', data);
       navigate(`/room/${roomId}/game`, {
-        state: { gameId: data.gameId, players: data.players, trumpNumber: data.trumpNumber, trumpSuit: data.trumpSuit, roundKingId: data.roundKingId },
+        state: { gameId: data.gameId, players: data.players.map(mapGamePlayer), trumpNumber: data.trumpNumber, trumpSuit: data.trumpSuit, roundKingId: data.roundKingId },
       });
     };
 
     const onRejoinSuccess = (data: {
       game: { game_id: string; trump_number: string; trump_suit: string; round_king: string | null; trump_declarer: string | null; trump_count: number };
-      players: Array<Player & { hand: string[] }>;
+      players: Array<RawPlayer & { hand: string[] }>;
       currentDealTick: number;
       phase: string;
       kittyCards?: string[];
+      singleDeclarer?: { playerId: string; card: string } | null;
       roundResult?: {
         attackingPoints: number;
         defendingPoints: number;
@@ -123,7 +125,7 @@ export default function RoomPage() {
       navigate(`/room/${roomId}/game`, {
         state: {
           gameId: data.game.game_id,
-          players: data.players,
+          players: data.players.map(mapGamePlayer),
           trumpNumber: data.game.trump_number,
           trumpSuit: data.game.trump_suit,
           roundKingId: data.game.round_king,
@@ -134,33 +136,34 @@ export default function RoomPage() {
           kittyCards: data.kittyCards ?? null,
           roundResult: data.roundResult ?? null,
           trickState: data.trickState ?? null,
+          singleDeclarer: data.singleDeclarer ?? null,
         },
       });
     };
 
     const handlers: [string, (...args: any[]) => void][] = [
-      ['player-joined', onPlayerJoined],
-      ['player-left', onPlayerLeft],
-      ['room-error', onRoomError],
-      ['game-started', onGameStarted],
-      ['rejoin-success', onRejoinSuccess],
+      [EVENTS.PLAYER_JOINED, onPlayerJoined],
+      [EVENTS.PLAYER_LEFT, onPlayerLeft],
+      [EVENTS.ROOM_ERROR, onRoomError],
+      [EVENTS.GAME_STARTED, onGameStarted],
+      [EVENTS.REJOIN_SUCCESS, onRejoinSuccess],
     ];
     for (const [event, handler] of handlers) socket.on(event, handler);
     return () => { for (const [event, handler] of handlers) socket.off(event, handler); };
   }, [socket]);
 
   const handleJoin = (displayName: string) => {
-    socket.emit('join-room', { roomId, displayName, startingRank: 2 });
+    socket.emit(EVENTS.JOIN_ROOM, { roomId, displayName, startingRank: 2 });
     dispatch({ type: 'JOINED' });
   };
 
   const handleRankChange = (rank: number) => {
     setStartingRank(rank);
-    socket.emit('set-starting-rank', { roomId, rank });
+    socket.emit(EVENTS.SET_STARTING_RANK, { roomId, rank });
   };
 
   const handleStartGame = () => {
-    socket.emit('start-game', { roomId });
+    socket.emit(EVENTS.START_GAME, { roomId });
   };
 
   if (error) {

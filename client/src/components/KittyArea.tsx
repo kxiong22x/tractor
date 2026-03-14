@@ -13,7 +13,7 @@ export default function KittyArea({ isKittyPhase, kittyCards, onKittyCardClick, 
   if (!isKittyPhase) return null;
 
   return (
-    <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
+    <div className="kitty-area">
       {kittyCards.map((card) => (
         <div
           key={card}

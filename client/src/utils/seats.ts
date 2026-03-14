@@ -47,6 +47,14 @@ export function getPositionOrder(numPlayers: number): SeatPosition[] {
   return ['bottom', 'left', 'top', 'right'];
 }
 
+export function buildSeatMap(numPlayers: number, currentIndex: number): SeatPosition[] {
+  const positionOrder = getPositionOrder(numPlayers);
+  return Array.from({ length: numPlayers }, (_, i) => {
+    const rotated = (i - currentIndex + numPlayers) % numPlayers;
+    return positionOrder[rotated];
+  });
+}
+
 export function cardsDealtForPlayer(joinIndex: number, tick: number, numPlayers: number, cardsPerPlayer: number): number {
   if (tick <= joinIndex) return 0;
   return Math.min(cardsPerPlayer, Math.floor((tick - joinIndex - 1) / numPlayers) + 1);

@@ -1,4 +1,5 @@
 import { Server, Socket } from 'socket.io';
+import { EVENTS } from '../../../../shared/events';
 import { getPlayersInRoom, resetRoundPoints, getPlayerRank, updatePlayerHand } from '../../db/player.queries';
 import { createGame, getGame, updateKitty, resetGameForNewRound, updateGamePhase } from '../../db/game.queries';
 import { dealCards } from '../../game/deck';
@@ -14,24 +15,24 @@ export function startDealing(io: Server, gameId: string, roomId: string, totalTi
   const interval = setInterval(() => {
     tick++;
     dealingTicks.set(gameId, { current: tick, total: totalTicks });
-    io.to(roomId).emit('deal-tick', { tick });
+    io.to(roomId).emit(EVENTS.DEAL_TICK, { tick });
     if (tick >= totalTicks) {
       clearInterval(interval);
       dealingIntervals.delete(gameId);
       dealingTicks.delete(gameId);
       updateGamePhase(gameId, 'declaration');
-      io.to(roomId).emit('dealing-complete');
+      io.to(roomId).emit(EVENTS.DEALING_COMPLETE);
     }
   }, 500);
   dealingIntervals.set(gameId, interval);
 }
 
 export function registerGameHandlers(io: Server, socket: Socket) {
-  socket.on('start-game', (payload: { roomId: string }) => {
+  socket.on(EVENTS.START_GAME, (payload: { roomId: string }) => {
     const { roomId } = payload;
     const players = getPlayersInRoom(roomId);
     if (players.length < MIN_PLAYERS_TO_START) {
-      socket.emit('room-error', { message: `Need at least ${MIN_PLAYERS_TO_START} players to start` });
+      socket.emit(EVENTS.ROOM_ERROR, { message: `Need at least ${MIN_PLAYERS_TO_START} players to start` });
       return;
     }
 
@@ -57,7 +58,7 @@ export function registerGameHandlers(io: Server, socket: Socket) {
       hand: hands[i],
     }));
 
-    io.to(roomId).emit('game-started', {
+    io.to(roomId).emit(EVENTS.GAME_STARTED, {
       gameId: game.game_id,
       players: playersWithHands,
       trumpNumber,
@@ -69,18 +70,18 @@ export function registerGameHandlers(io: Server, socket: Socket) {
     startDealing(io, game.game_id, roomId, hands[0].length * gamePlayers.length);
   });
 
-  socket.on('start-next-round', (payload: { gameId: string }) => {
+  socket.on(EVENTS.START_NEXT_ROUND, (payload: { gameId: string }) => {
     const { gameId } = payload;
 
     const game = getGame(gameId);
     if (!game) {
-      socket.emit('room-error', { message: 'Game not found' });
+      socket.emit(EVENTS.ROOM_ERROR, { message: 'Game not found' });
       return;
     }
 
     const nextKingId = pendingNextKing.get(gameId);
     if (!nextKingId) {
-      socket.emit('room-error', { message: 'No pending next round' });
+      socket.emit(EVENTS.ROOM_ERROR, { message: 'No pending next round' });
       return;
     }
     pendingNextKing.delete(gameId);
@@ -110,7 +111,7 @@ export function registerGameHandlers(io: Server, socket: Socket) {
 
     const updatedGame = getGame(gameId)!;
 
-    io.to(game.room_id).emit('game-started', {
+    io.to(game.room_id).emit(EVENTS.GAME_STARTED, {
       gameId: game.game_id,
       players: playersWithHands,
       trumpNumber,

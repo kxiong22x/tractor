@@ -21,63 +21,42 @@ interface RoundOverModalProps {
 export default function RoundOverModal({ roundResult, players, onNextRound }: RoundOverModalProps) {
   return (
     <ModalShell>
-        <h2 style={{ margin: '0 0 1rem', fontSize: '1.5rem' }}>
+        <h2 className="modal-heading">
           {roundResult.gameOver ? 'Game Over!' : 'Round Over'}
         </h2>
-        <div style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '0.75rem', color: roundResult.winningTeam === 'attacking' ? '#e74c3c' : '#2980b9' }}>
+        <div
+          className="round-result__winner"
+          style={{ color: roundResult.winningTeam === 'attacking' ? '#e74c3c' : '#2980b9' }}
+        >
           {roundResult.winningTeam === 'attacking' ? 'Attacking' : 'Defending'} team wins!
         </div>
-        <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+        <div className="round-result__score">
           Attacking: {roundResult.attackingPoints} pts | Defending: {roundResult.defendingPoints} pts
         </div>
         {roundResult.kittyBonus > 0 && (
-          <div style={{ fontSize: '0.8125rem', marginBottom: '0.75rem', opacity: 0.7 }}>
+          <div className="round-result__kitty-bonus">
             (includes {roundResult.kittyBonus} kitty bonus pts)
           </div>
         )}
-        <div style={{ marginBottom: '1.25rem' }}>
+        <div className="round-result__rank-changes">
           {players.map(p => {
-            const rc = roundResult.rankChanges[p.player_id];
+            const rc = roundResult.rankChanges[p.playerId];
             if (!rc) return null;
             const changed = rc.oldRank !== rc.newRank;
             return (
-              <div key={p.player_id} style={{ fontSize: '0.875rem', marginBottom: '0.25rem' }}>
-                <strong>{p.display_name}</strong>: {RANK_DISPLAY[rc.oldRank] ?? String(rc.oldRank)}
-                {changed && <span style={{ color: '#27ae60' }}> &rarr; {RANK_DISPLAY[rc.newRank] ?? String(rc.newRank)}</span>}
+              <div key={p.playerId} className="round-result__rank-item">
+                <strong>{p.displayName}</strong>: {RANK_DISPLAY[rc.oldRank] ?? String(rc.oldRank)}
+                {changed && <span className="round-result__rank-up"> &rarr; {RANK_DISPLAY[rc.newRank] ?? String(rc.newRank)}</span>}
               </div>
             );
           })}
         </div>
         {roundResult.gameOver ? (
-          <a
-            href="/"
-            style={{
-              display: 'inline-block',
-              padding: '0.75rem 2rem',
-              fontSize: '1rem',
-              fontWeight: 'bold',
-              backgroundColor: '#2980b9',
-              color: 'white',
-              borderRadius: '0.5rem',
-              textDecoration: 'none',
-            }}
-          >
+          <a href="/" className="btn--action-link">
             Return to Home
           </a>
         ) : (
-          <button
-            onClick={onNextRound}
-            style={{
-              padding: '0.75rem 2rem',
-              fontSize: '1rem',
-              fontWeight: 'bold',
-              backgroundColor: '#4CAF50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.5rem',
-              cursor: 'pointer',
-            }}
-          >
+          <button onClick={onNextRound} className="btn--success btn--large" style={{ border: 'none' }}>
             Next Round
           </button>
         )}

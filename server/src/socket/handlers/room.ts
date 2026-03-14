@@ -1,20 +1,21 @@
 import { Server, Socket } from 'socket.io';
+import { EVENTS } from '../../../../shared/events';
 import { getRoom, removeRoom } from '../../db/room.queries';
 import { addPlayer, removePlayerBySocketId, getPlayersInRoom, getPlayerCountInRoom, getPlayerBySocketId, setPlayerDisconnected, setPlayerReconnected, getDisconnectedPlayerByName, updatePlayerRank } from '../../db/player.queries';
 import { getGameByRoomId } from '../../db/game.queries';
 import { JoinRoomPayload } from '../../types';
 import { MAX_PLAYERS } from '../../game/constants';
-import { trickStates, pendingNextTrick, pendingNextKing, dealingIntervals, dealingTicks, pendingRoundResults } from '../state';
+import { trickStates, pendingNextTrick, pendingNextKing, dealingIntervals, dealingTicks, pendingRoundResults, singleDeclarerState } from '../state';
 import { startDealing } from './game';
 import { startTrick } from './trick';
 
 export function registerRoomHandlers(io: Server, socket: Socket) {
-  socket.on('join-room', (payload: JoinRoomPayload) => {
+  socket.on(EVENTS.JOIN_ROOM, (payload: JoinRoomPayload) => {
     const { roomId, displayName, startingRank } = payload;
 
     const room = getRoom(roomId);
     if (!room) {
-      socket.emit('room-error', { message: 'Room not found' });
+      socket.emit(EVENTS.ROOM_ERROR, { message: 'Room not found' });
       return;
     }
 
@@ -38,7 +39,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
 
         if (tickData) {
           startDealing(io, gameId, roomId, tickData.total, tickData.current);
-          socket.emit('rejoin-success', {
+          socket.emit(EVENTS.REJOIN_SUCCESS, {
             players,
             game,
             myHand,
@@ -60,7 +61,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
             pendingNextTrick.set(gameId, { ...pntData, handle });
           }
 
-          socket.emit('rejoin-success', {
+          socket.emit(EVENTS.REJOIN_SUCCESS, {
             players,
             game,
             myHand,
@@ -83,7 +84,8 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
           const kittyCards = game.phase === 'kitty' && disconnectedPlayer.player_id === game.round_king
             ? JSON.parse(game.kitty as string)
             : undefined;
-          socket.emit('rejoin-success', {
+          const singleDeclarer = singleDeclarerState.get(gameId) ?? null;
+          socket.emit(EVENTS.REJOIN_SUCCESS, {
             players,
             game,
             myHand,
@@ -94,10 +96,14 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
             totalDealTicks: 0,
             trickState: null,
             pendingNextTrick: null,
+            singleDeclarer,
           });
+          if (singleDeclarer && singleDeclarer.playerId === disconnectedPlayer.player_id && game.trump_declarer !== disconnectedPlayer.player_id) {
+            socket.emit(EVENTS.CAN_REINFORCE, { targetPlayerId: singleDeclarer.playerId, card: singleDeclarer.card });
+          }
         }
 
-        io.to(roomId).emit('player-reconnected', {
+        io.to(roomId).emit(EVENTS.PLAYER_RECONNECTED, {
           playerId: disconnectedPlayer.player_id,
           players,
         });
@@ -107,13 +113,13 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
 
     const count = getPlayerCountInRoom(roomId);
     if (count >= MAX_PLAYERS) {
-      socket.emit('room-error', { message: 'Room is full (max 6 players)' });
+      socket.emit(EVENTS.ROOM_ERROR, { message: 'Room is full (max 6 players)' });
       return;
     }
 
     const existingPlayers = getPlayersInRoom(roomId);
     if (existingPlayers.some(p => p.display_name === displayName)) {
-      socket.emit('room-error', { message: 'That name is already taken in this room' });
+      socket.emit(EVENTS.ROOM_ERROR, { message: 'That name is already taken in this room' });
       return;
     }
 
@@ -121,10 +127,10 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
     socket.join(roomId);
 
     const players = getPlayersInRoom(roomId);
-    io.to(roomId).emit('player-joined', { player, players });
+    io.to(roomId).emit(EVENTS.PLAYER_JOINED, { player, players });
   });
 
-  socket.on('set-starting-rank', (payload: { roomId: string; rank: number }) => {
+  socket.on(EVENTS.SET_STARTING_RANK, (payload: { roomId: string; rank: number }) => {
     const player = getPlayerBySocketId(socket.id);
     if (!player) return;
     const rank = Math.max(2, Math.min(14, Math.round(payload.rank)));
@@ -152,46 +158,28 @@ function handleDisconnect(io: Server, socket: Socket) {
     if (players.length === 0) {
       removeRoom(roomId);
     }
-    io.to(roomId).emit('player-left', { playerId: player.player_id, players });
+    io.to(roomId).emit(EVENTS.PLAYER_LEFT, { playerId: player.player_id, players });
     socket.leave(roomId);
     return;
   }
 
-  const gameId = game.game_id;
+  // Always freeze the player and notify the room
+  setPlayerDisconnected(socket.id);
+  io.to(roomId).emit(EVENTS.PLAYER_DISCONNECTED, {
+    playerId: player.player_id,
+    playerName: player.display_name,
+  });
 
+  // Phase-specific timer cleanup
+  const gameId = game.game_id;
   if (dealingIntervals.has(gameId)) {
-    // DEALING PHASE freeze
-    setPlayerDisconnected(socket.id);
     clearInterval(dealingIntervals.get(gameId)!);
     dealingIntervals.delete(gameId);
-    io.to(roomId).emit('player-disconnected', {
-      playerId: player.player_id,
-      playerName: player.display_name,
-    });
   } else if (trickStates.has(gameId)) {
-    // TRICK PHASE freeze
-    setPlayerDisconnected(socket.id);
-
-    // Pause between-tricks timer if running.
-    // Keep the pendingNextTrick entry as the reconnect signal (same pattern as
-    // dealingIntervals cleared / dealingTicks kept during dealing freeze).
     const pnt = pendingNextTrick.get(gameId);
-    if (pnt) {
-      clearTimeout(pnt.handle);
-      // Entry is intentionally left in pendingNextTrick — its presence tells
-      // the reconnect handler to restart the timer.
-    }
-
-    io.to(roomId).emit('player-disconnected', {
-      playerId: player.player_id,
-      playerName: player.display_name,
-    });
-  } else {
-    // DECLARATION / KITTY / ROUND-OVER freeze
-    setPlayerDisconnected(socket.id);
-    io.to(roomId).emit('player-disconnected', {
-      playerId: player.player_id,
-      playerName: player.display_name,
-    });
+    if (pnt) clearTimeout(pnt.handle);
+    // Entry is intentionally left in pendingNextTrick — its presence tells
+    // the reconnect handler to restart the timer.
   }
+  // Other phases need no timer cleanup
 }

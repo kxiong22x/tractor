@@ -1,8 +1,11 @@
 import { useState, useEffect, useReducer, useRef } from 'react';
+import { EVENTS } from '../../../shared/events';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSocket } from '../hooks/useSocket';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { useGameActions } from '../hooks/useGameActions';
+import { useGameLayout } from '../hooks/useGameLayout';
+import { useReconnectInit } from '../hooks/useReconnectInit';
 import { gameReducer, buildInitialState } from '../gameState';
 import type { GamePlayer, RoundResult } from '../gameState';
 import PlayerSeat from '../components/PlayerSeat';
@@ -15,10 +18,37 @@ import TrickCompleteOverlay from '../components/TrickCompleteOverlay';
 import HandDisplay from '../components/HandDisplay';
 import GameLog from '../components/GameLog';
 import { sortHand } from '../utils/cards';
-import { cardsDealtForPlayer, getPositionOrder } from '../utils/seats';
-import { isMobile, calcHandRowSize, calcCardScale } from '../utils/layout';
-import { CARD_WIDTH_REM, CARD_HEIGHT_REM, MINI_SCALE } from '../utils/cards';
-import useWindowSize from '../hooks/useWindowSize';
+import { cardsDealtForPlayer, buildSeatMap } from '../utils/seats';
+import { isMobile } from '../utils/layout';
+
+function getDeclaredCards(
+  playerDecl: { suit: string; count: number } | undefined,
+  trumpNumber: string
+): string[] | undefined {
+  if (!playerDecl) return undefined;
+  if (playerDecl.suit === 'BJ' || playerDecl.suit === 'SJ') {
+    return [`J${playerDecl.suit[0]}-decl0`, `J${playerDecl.suit[0]}-decl1`];
+  }
+  if (playerDecl.count === 2) {
+    return [`${playerDecl.suit}${trumpNumber}-decl0`, `${playerDecl.suit}${trumpNumber}-decl1`];
+  }
+  return [`${playerDecl.suit}${trumpNumber}-decl0`];
+}
+
+function calcAttackingPoints(
+  players: GamePlayer[],
+  roundKingId: string | null,
+  playerPoints: Record<string, number>
+): number {
+  if (!roundKingId) return 0;
+  const kingIdx = players.findIndex(p => p.playerId === roundKingId);
+  if (kingIdx < 0) return 0;
+  let total = 0;
+  for (let offset = 1; offset < players.length; offset += 2) {
+    total += playerPoints[players[(kingIdx + offset) % players.length].playerId] ?? 0;
+  }
+  return total;
+}
 
 export default function GamePage() {
   const location = useLocation();
@@ -27,7 +57,7 @@ export default function GamePage() {
 
   const [state, dispatch] = useReducer(gameReducer, location.state, buildInitialState);
   const {
-    players, gameId, trumpNumber, trumpSuit, trumpDeclarerId, trumpIsPair,
+    players, gameId, trumpNumber, trumpSuit, trumpIsPair, declarationHistory,
     roundKingId, kittyPickedUp, stagedCards, kittyCards, phase,
     handCards, handInitialized,
     currentTurn, trickPlays,
@@ -39,21 +69,7 @@ export default function GamePage() {
   const [throwError, setThrowError] = useState<string | null>(null);
   const [disconnectedPlayerName, setDisconnectedPlayerName] = useState<string | null>(null);
   const [logVisible, setLogVisible] = useState(() => !isMobile(window.innerWidth, window.innerHeight));
-  const { width, height } = useWindowSize();
-  const cardScale = calcCardScale(width, height, logVisible);
-  const overlapRem = 1.5 * cardScale;
-  // Min center height so gap between top/bottom player card areas = 1 mini card height
-  // Derived from: (1 - 2*0.03)*H - 2*(nameTagH + 0.25 + miniCardH) = miniCardH
-  const centerMinHeightRem = (
-    3 * (CARD_HEIGHT_REM * MINI_SCALE * cardScale) +          // 3 mini card heights
-    2 * (2 * 0.75 + 0.875 * 1.5 + 0.0625 + 0.6875 * 1.5 + 0.2) + // 2 name tags (2×padding + name + rank)
-    0.5                                                        // gap
-  ) / 0.94; // accounts for 3% top/bottom inset
-  const handRowSize = calcHandRowSize(
-    width - ((logVisible ? 10 : 1) + 2.5) * 16, // available px: subtract log panel + side padding
-    CARD_WIDTH_REM * cardScale,                  // card width in rem
-    overlapRem
-  );
+  const { cardScale, overlapRem, centerMinHeightRem, handRowSize } = useGameLayout(logVisible);
 
   // Dealing animation state — driven by server deal-tick events
   const [globalDealTick, setGlobalDealTick] = useState(location.state?.initialDealTick ?? 0);
@@ -63,7 +79,7 @@ export default function GamePage() {
 
   // Find current player
   const currentSocketId = socket.id;
-  const currentIndex = players.findIndex((p) => p.socket_id === currentSocketId);
+  const currentIndex = players.findIndex((p) => p.socketId === currentSocketId);
   const currentPlayer = currentIndex >= 0 ? players[currentIndex] : null;
   const rawHand = currentPlayer?.hand ?? [];
   rawHandRef.current = rawHand;
@@ -84,32 +100,8 @@ export default function GamePage() {
     setDisconnectedPlayerName,
   });
 
-  // On reconnect, the server navigates here with location.state pre-populated. useReducer can
-  // restore most state synchronously, but the hand must be hydrated from rawHandRef because the
-  // socket's player object (which holds the hand) isn't available until after mount.
-  useEffect(() => {
-    if (location.state?.phase === 'declaration' || location.state?.phase === 'round-over') {
-      dispatch({ type: 'INIT_HAND', hand: rawHandRef.current });
-    } else if (location.state?.phase === 'kitty') {
-      dispatch({ type: 'INIT_HAND', hand: rawHandRef.current });
-      dispatch({ type: 'KITTY_PICKED_UP', kittyCards: location.state?.kittyCards ?? undefined });
-    } else if (location.state?.phase === 'trick' && location.state?.trickState) {
-      const ts = location.state.trickState;
-      const playerPoints = (location.state.players as GamePlayer[]).reduce(
-        (acc: Record<string, number>, p: GamePlayer) => ({ ...acc, [p.player_id]: p.round_points }),
-        {}
-      );
-      dispatch({
-        type: 'RESTORE_TRICK_STATE',
-        trickPlays: Object.fromEntries(ts.plays),
-        trickPlayerOrder: ts.playerOrder,
-        currentTurn: ts.currentTurn,
-        trickCommitted: ts.committed,
-        hand: rawHandRef.current,
-        playerPoints,
-      });
-    }
-  }, []);
+  // On reconnect, restore hand and game state from location.state.
+  useReconnectInit({ locationState: location.state, dispatch, rawHandRef, currentPlayer });
 
   // Close reinforce window after 2 more cards are dealt to the player
   useEffect(() => {
@@ -132,12 +124,7 @@ export default function GamePage() {
     );
   }
 
-  // Arrange seating
-  const positionOrder = getPositionOrder(players.length);
-  const seatMap = players.map((_, i) => {
-    const rotated = (i - currentIndex + players.length) % players.length;
-    return positionOrder[rotated];
-  });
+  const seatMap = buildSeatMap(players.length, currentIndex);
 
   // Computed from server-driven globalDealTick — always consistent in the same render
   const isDealing = globalDealTick < rawHand.length * players.length;
@@ -145,8 +132,8 @@ export default function GamePage() {
   // Use handCards once populated (post-deal), otherwise use rawHand for dealing animation
   const myRevealedCount = cardsDealtForPlayer(currentIndex, globalDealTick, players.length, rawHand.length);
   const myHand = handInitialized
-    ? sortHand(handCards, trumpNumber)
-    : sortHand(rawHand.slice(0, myRevealedCount), trumpNumber);
+    ? sortHand(handCards, trumpNumber, trumpSuit)
+    : sortHand(rawHand.slice(0, myRevealedCount), trumpNumber, trumpSuit);
   const displayHand = myHand;
 
   const { isDeclarable, isClickableInTrickPhase, handleKittyCardClick, handleCardClick, nameTagButtons } = useGameActions({
@@ -158,18 +145,9 @@ export default function GamePage() {
   });
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', overflow: 'hidden', backgroundColor: '#faf2e4' }}>
+    <div className="game-page">
       <GameLog log={log} isVisible={logVisible} onToggle={setLogVisible} />
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          minWidth: 0,
-          overflow: 'auto',
-          minHeight: '100%',
-        }}
-      >
+      <div className="game-page__main">
         {/* Row 1: Trump info */}
         <div style={{ width: '100%' }}>
           <TrumpInfo
@@ -177,46 +155,32 @@ export default function GamePage() {
             trumpSuit={trumpSuit}
             trickPhase={phase === 'trick'}
             cardScale={cardScale}
-            attackingPoints={(() => {
-              if (!roundKingId) return 0;
-              const kingIdx = players.findIndex(p => p.player_id === roundKingId);
-              if (kingIdx < 0) return 0;
-              let total = 0;
-              for (let offset = 1; offset < players.length; offset += 2) {
-                const pid = players[(kingIdx + offset) % players.length].player_id;
-                total += playerPoints[pid] ?? 0;
-              }
-              return total;
-            })()}
+            attackingPoints={calcAttackingPoints(players, roundKingId, playerPoints)}
           />
         </div>
 
         {/* Row 2: Player seats */}
-        <div style={{ position: 'relative', flex: 1, minHeight: `min(${centerMinHeightRem.toFixed(2)}rem, 75vh)` }}>
+        <div className="game-page__seats" style={{ minHeight: `min(${centerMinHeightRem.toFixed(2)}rem, 75vh)` }}>
           {players.map((player, i) => {
-            const isDeclarer = trumpDeclarerId === player.player_id && trumpSuit !== 'NA';
-            const declaredCards = isDeclarer && phase === 'declaration' && !kittyPickedUp
-              ? (trumpSuit === 'BJ' || trumpSuit === 'SJ')
-                ? [`J${trumpSuit[0]}-decl0`, `J${trumpSuit[0]}-decl1`]
-                : trumpIsPair
-                  ? [`${trumpSuit}${trumpNumber}-decl0`, `${trumpSuit}${trumpNumber}-decl1`]
-                  : [`${trumpSuit}${trumpNumber}-decl0`]
+            const playerDecl = !kittyPickedUp && phase === 'declaration'
+              ? declarationHistory[player.playerId]
               : undefined;
-          return (
+            const declaredCards = getDeclaredCards(playerDecl, trumpNumber);
+            return (
             <PlayerSeat
-              key={player.player_id}
+              key={player.playerId}
               player={player}
               position={seatMap[i]}
-              isCurrentPlayer={player.socket_id === currentSocketId}
-              isRoundKing={player.player_id === roundKingId}
+              isCurrentPlayer={player.socketId === currentSocketId}
+              isRoundKing={player.playerId === roundKingId}
               declaredCards={declaredCards}
               isBeingDealt={isDealing && globalDealTick > 0 && (globalDealTick - 1) % players.length === i}
-              playedCards={trickPlays[player.player_id]}
-              isCurrentTurn={phase === 'trick' && currentTurn === player.player_id}
+              playedCards={trickPlays[player.playerId]}
+              isCurrentTurn={phase === 'trick' && currentTurn === player.playerId}
               rank={player.rank ?? 2}
               trumpSuit={trumpSuit}
               trumpNumber={trumpNumber}
-              buttons={player.socket_id === currentSocketId ? nameTagButtons : undefined}
+              buttons={player.socketId === currentSocketId ? nameTagButtons : undefined}
               cardScale={cardScale}
             />
           );
@@ -224,15 +188,10 @@ export default function GamePage() {
       </div>
 
       {/* Row 3: Hand display — full width */}
-      <div
-        style={{
-          padding: '0.5rem 1.25rem 1.25rem',
-          flexShrink: 0,
-        }}
-      >
+      <div className="game-page__hand-area">
         {/* Kitty cards — above hand */}
         {phase === 'kitty' && (
-          <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '0.75rem' }}>
+          <div className="game-page__kitty-row">
           <KittyArea
             isKittyPhase={phase === 'kitty'}
             kittyCards={kittyCards}
@@ -267,7 +226,7 @@ export default function GamePage() {
           <RoundOverModal
             roundResult={roundResult}
             players={players}
-            onNextRound={() => socket.emit('start-next-round', { gameId })}
+            onNextRound={() => socket.emit(EVENTS.START_NEXT_ROUND, { gameId })}
           />
         )}
 

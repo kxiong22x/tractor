@@ -39,6 +39,7 @@ export interface GameState {
   canReinforce: boolean;
   reinforceCard: string | null;
   reinforceCloseAtCardCount: number | null;
+  declarationHistory: Record<string, { suit: string; count: number }>;
 }
 
 export type GameAction =
@@ -70,7 +71,7 @@ export type GameAction =
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'TRUMP_DECLARED': {
-      const declarerName = state.players.find(p => p.player_id === action.declarerId)?.display_name ?? action.declarerId;
+      const declarerName = state.players.find(p => p.playerId === action.declarerId)?.displayName ?? action.declarerId;
       const isJoker = action.trumpSuit === 'BJ' || action.trumpSuit === 'SJ';
       const baseCard = isJoker ? `J${action.trumpSuit[0]}` : `${action.trumpSuit}${state.trumpNumber}`;
       const declaredCards = (isJoker || action.isPair) ? [baseCard, baseCard] : [baseCard];
@@ -84,6 +85,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         canReinforce: false,
         reinforceCard: null,
         reinforceCloseAtCardCount: null,
+        declarationHistory: {
+          ...state.declarationHistory,
+          [action.declarerId]: { suit: action.trumpSuit, count: action.isPair ? 2 : 1 },
+        },
         log: [...state.log, { type: 'declare' as const, playerName: declarerName, cards: declaredCards }],
       };
     }
@@ -108,6 +113,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         canReinforce: false,
         reinforceCard: null,
         reinforceCloseAtCardCount: null,
+        declarationHistory: {},
         ...(action.kittyCards
           ? { kittyCards: action.kittyCards, phase: 'kitty' as const }
           : {}),
@@ -134,7 +140,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const newHand = action.playerId === action.currentPlayerId
         ? state.handCards.filter(c => !action.cards.includes(c))
         : state.handCards;
-      const playerName = state.players.find(p => p.player_id === action.playerId)?.display_name ?? action.playerId;
+      const playerName = state.players.find(p => p.playerId === action.playerId)?.displayName ?? action.playerId;
       const nowCommitted = [...new Set([...state.trickCommitted, ...Object.keys(state.trickPlays)])];
       return {
         ...state,
@@ -154,7 +160,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const newHand = action.playerId === action.currentPlayerId
         ? [...state.handCards, ...action.cards]
         : state.handCards;
-      const undoerName = state.players.find(p => p.player_id === action.playerId)?.display_name ?? action.playerId;
+      const undoerName = state.players.find(p => p.playerId === action.playerId)?.displayName ?? action.playerId;
       return {
         ...state,
         trickPlays: newPlays,
@@ -168,8 +174,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'TRICK_COMPLETE': {
-      const winner = state.players.find(p => p.player_id === action.winnerId);
-      const winnerName = winner?.display_name ?? 'Unknown';
+      const winner = state.players.find(p => p.playerId === action.winnerId);
+      const winnerName = winner?.displayName ?? 'Unknown';
       return {
         ...state,
         trickComplete: { winnerId: action.winnerId, winnerName },
@@ -189,8 +195,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         currentTurn: null,
         trickPlays: {},
         players: state.players.map(p =>
-          action.rankChanges[p.player_id]
-            ? { ...p, rank: action.rankChanges[p.player_id].newRank }
+          action.rankChanges[p.playerId]
+            ? { ...p, rank: action.rankChanges[p.playerId].newRank }
             : p
         ),
       };
@@ -302,6 +308,14 @@ export function buildInitialState(locationState: any): GameState {
     canReinforce: false,
     reinforceCard: null,
     reinforceCloseAtCardCount: null,
+    declarationHistory: {
+      ...(locationState?.trumpDeclarerId && locationState?.trumpSuit !== 'NA'
+        ? { [locationState.trumpDeclarerId]: { suit: locationState.trumpSuit, count: locationState.trumpIsPair ? 2 : 1 } }
+        : {}),
+      ...(locationState?.singleDeclarer
+        ? { [locationState.singleDeclarer.playerId]: { suit: locationState.singleDeclarer.card[0], count: 1 } }
+        : {}),
+    },
     log: [],
   };
 }

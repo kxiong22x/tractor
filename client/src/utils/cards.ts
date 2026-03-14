@@ -3,10 +3,8 @@ export const MINI_SCALE = 3.5 / 5;
 export const CARD_WIDTH_REM = 4.5;
 export const CARD_HEIGHT_REM = 6.3;
 
-export function parseCard(card: string): { suit: string; rank: string } {
-  const [cardPart] = card.split('-');
-  return { suit: cardPart[0], rank: cardPart.slice(1) };
-}
+import { parseCard, isTrumpCard } from '../../../shared/cards';
+export { parseCard, isTrumpCard };
 
 export const SUIT_SYMBOLS: Record<string, string> = {
   S: '\u2660',
@@ -29,32 +27,29 @@ export const RANK_ORDER: Record<string, number> = {
   'J': 11, 'Q': 12, 'K': 13, 'A': 14, 'S': 15, 'B': 16,
 };
 
-export function sortHand(cards: string[], trumpNum: string): string[] {
-  function isTrumpGroup(suit: string, rank: string): boolean {
-    return suit === 'J' || rank === trumpNum;
-  }
-
+export function sortHand(cards: string[], trumpNum: string, trumpSuit: string): string[] {
   return [...cards].sort((a, b) => {
     const ca = parseCard(a);
     const cb = parseCard(b);
-    const aTrump = isTrumpGroup(ca.suit, ca.rank);
-    const bTrump = isTrumpGroup(cb.suit, cb.rank);
+    const aTrump = isTrumpCard(a, trumpSuit, trumpNum);
+    const bTrump = isTrumpCard(b, trumpSuit, trumpNum);
 
     // Trump group comes first
     if (aTrump && !bTrump) return -1;
     if (!aTrump && bTrump) return 1;
 
     if (aTrump && bTrump) {
-      // Within trump group: jokers last (Big > Small), then by suit then rank
-      const aJoker = ca.suit === 'J';
-      const bJoker = cb.suit === 'J';
-      if (aJoker && !bJoker) return 1;
-      if (!aJoker && bJoker) return -1;
-      if (aJoker && bJoker) return RANK_ORDER[ca.rank] - RANK_ORDER[cb.rank];
-      // Both are trump-number cards: sort by suit
-      const suitDiff = SUIT_ORDER[ca.suit] - SUIT_ORDER[cb.suit];
-      if (suitDiff !== 0) return suitDiff;
-      return 0;
+      // Within trump group: normal trumps, then trump numbers, then jokers
+      const trumpTier = (suit: string, rank: string) => {
+        if (suit === 'J') return 3;
+        if (rank === trumpNum && suit === trumpSuit) return 2;
+        if (rank === trumpNum) return 1;
+        return 0;
+      };
+      const tierDiff = trumpTier(ca.suit, ca.rank) - trumpTier(cb.suit, cb.rank);
+      if (tierDiff !== 0) return tierDiff;
+      // Within same tier: sort by rank
+      return RANK_ORDER[ca.rank] - RANK_ORDER[cb.rank];
     }
 
     // Non-trump: sort by suit then rank

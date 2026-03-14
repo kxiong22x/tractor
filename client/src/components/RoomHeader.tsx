@@ -13,7 +13,7 @@ export default function RoomHeader({ roomId }: RoomHeaderProps) {
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem 0', gap: '0.75rem' }}>
+    <div className="room-header">
       <h2 style={{ margin: 0 }}>Room: {roomId}</h2>
       <PrimaryButton onClick={handleCopy} size="small">Copy Link</PrimaryButton>
     </div>

@@ -22,16 +22,7 @@ export default function HandDisplay({ displayHand, stagedCards, isKittyPhase, is
   }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '0.25rem',
-        flexShrink: 0,
-        width: '100%',
-      }}
-    >
+    <div className="hand-display">
       {rows.map((rowCards, rowIdx) => (
         <div
           key={`hand-row-${rowIdx}`}

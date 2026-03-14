@@ -24,28 +24,9 @@ export default function PlayerForm({ onJoin }: PlayerFormProps) {
         onChange={(e) => setName(e.target.value)}
         placeholder="Your name"
         maxLength={20}
-        style={{
-          padding: '0.5rem 1rem',
-          fontSize: '1rem',
-          borderRadius: '0.375rem',
-          border: '0.0625rem solid black',
-          backgroundColor: 'white',
-          color: 'black',
-          marginRight: '0.5rem',
-        }}
+        className="form-input"
       />
-      <button
-        type="submit"
-        style={{
-          padding: '0.5rem 1.5rem',
-          fontSize: '1rem',
-          cursor: 'pointer',
-          borderRadius: '0.375rem',
-          border: 'none',
-          backgroundColor: '#f7892e',
-          color: 'white',
-        }}
-      >
+      <button type="submit" style={{ border: 'none', padding: '0.5rem 1.5rem', borderRadius: '0.375rem' }}>
         Join
       </button>
     </form>

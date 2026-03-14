@@ -1,4 +1,5 @@
 import { Server, Socket } from 'socket.io';
+import { EVENTS } from '../../../../shared/events';
 import { getPlayerBySocketId, getPlayerById, addPointsToPlayer, getRoundPoints, getPlayersInRoom, updatePlayerRank, updatePlayerHand } from '../../db/player.queries';
 import { getGame, updateGamePhase } from '../../db/game.queries';
 import { parseHand, cardPoints } from '../../game/deck';
@@ -38,7 +39,7 @@ export function startTrick(
   };
   trickStates.set(gameId, state);
 
-  io.to(roomId).emit('trick-started', {
+  io.to(roomId).emit(EVENTS.TRICK_STARTED, {
     leaderId,
     trickNum,
     playerOrder,
@@ -46,43 +47,43 @@ export function startTrick(
 }
 
 export function registerTrickHandlers(io: Server, socket: Socket) {
-  socket.on('play-cards', (payload: PlayCardsPayload) => {
+  socket.on(EVENTS.PLAY_CARDS, (payload: PlayCardsPayload) => {
     const { gameId, cards } = payload;
 
     const trickState = trickStates.get(gameId);
     if (!trickState) {
-      socket.emit('play-error', { message: 'No active trick' });
+      socket.emit(EVENTS.PLAY_ERROR, { message: 'No active trick' });
       return;
     }
 
     const player = getPlayerBySocketId(socket.id);
     if (!player) {
-      socket.emit('play-error', { message: 'Player not found' });
+      socket.emit(EVENTS.PLAY_ERROR, { message: 'Player not found' });
       return;
     }
 
     if (player.player_id !== trickState.currentTurn) {
-      socket.emit('play-error', { message: 'Not your turn' });
+      socket.emit(EVENTS.PLAY_ERROR, { message: 'Not your turn' });
       return;
     }
 
     const dbPlayer = getPlayerById(player.player_id);
     if (!dbPlayer) {
-      socket.emit('play-error', { message: 'Player not found in DB' });
+      socket.emit(EVENTS.PLAY_ERROR, { message: 'Player not found in DB' });
       return;
     }
     const hand = parseHand(dbPlayer);
 
     for (const card of cards) {
       if (!hand.includes(card)) {
-        socket.emit('play-error', { message: `Card ${card} not in your hand` });
+        socket.emit(EVENTS.PLAY_ERROR, { message: `Card ${card} not in your hand` });
         return;
       }
     }
 
     const game = getGame(gameId);
     if (!game) {
-      socket.emit('play-error', { message: 'Game not found' });
+      socket.emit(EVENTS.PLAY_ERROR, { message: 'Game not found' });
       return;
     }
 
@@ -96,7 +97,7 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
     if (isLeader) {
       const shape = classifyPlay(cards, ctx);
       if (shape.type === 'invalid') {
-        socket.emit('play-error', { message: 'Invalid card combination' });
+        socket.emit(EVENTS.PLAY_ERROR, { message: 'Invalid card combination' });
         return;
       }
 
@@ -125,13 +126,13 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
           trickState.plays.set(player.player_id, failedCards);
 
           const returnedCards = cards.filter(c => !failedCards.includes(c));
-          socket.emit('throw-failed', {
+          socket.emit(EVENTS.THROW_FAILED, {
             message: 'Throw blocked! An opponent can beat a component.',
             failedCards,
             returnedCards,
           });
 
-          io.to(trickState.roomId).emit('cards-played', {
+          io.to(trickState.roomId).emit(EVENTS.CARDS_PLAYED, {
             playerId: player.player_id,
             cards: failedCards,
           });
@@ -140,7 +141,7 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
           const nextIdx = (currentIdx + 1) % trickState.playerOrder.length;
           trickState.currentTurn = trickState.playerOrder[nextIdx];
 
-          io.to(trickState.roomId).emit('turn-advanced', {
+          io.to(trickState.roomId).emit(EVENTS.TURN_ADVANCED, {
             currentTurn: trickState.currentTurn,
           });
           return;
@@ -151,18 +152,18 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
     } else {
       const leaderCards = trickState.plays.get(trickState.leaderId);
       if (!leaderCards) {
-        socket.emit('play-error', { message: 'Leader has not played yet' });
+        socket.emit(EVENTS.PLAY_ERROR, { message: 'Leader has not played yet' });
         return;
       }
 
       if (cards.length !== leaderCards.length) {
-        socket.emit('play-error', { message: `Must play exactly ${leaderCards.length} cards` });
+        socket.emit(EVENTS.PLAY_ERROR, { message: `Must play exactly ${leaderCards.length} cards` });
         return;
       }
 
       const result = validateFollow(trickState.leaderShape!, cards, hand, ctx);
       if (!result.valid) {
-        socket.emit('play-error', { message: result.reason ?? 'Invalid play' });
+        socket.emit(EVENTS.PLAY_ERROR, { message: result.reason ?? 'Invalid play' });
         return;
       }
     }
@@ -176,7 +177,7 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
 
     trickState.plays.set(player.player_id, cards);
 
-    io.to(trickState.roomId).emit('cards-played', {
+    io.to(trickState.roomId).emit(EVENTS.CARDS_PLAYED, {
       playerId: player.player_id,
       cards,
     });
@@ -195,7 +196,7 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
         playsObj[pid] = pcards;
       }
 
-      io.to(trickState.roomId).emit('trick-complete', {
+      io.to(trickState.roomId).emit(EVENTS.TRICK_COMPLETE, {
         winnerId,
         plays: playsObj,
         points,
@@ -324,7 +325,7 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
         };
         pendingRoundResults.set(gameId, roundResult);
 
-        io.to(trickState.roomId).emit('round-over', roundResult);
+        io.to(trickState.roomId).emit(EVENTS.ROUND_OVER, roundResult);
       } else {
         const nextTrickNum = trickState.trickNum + 1;
         const roomId = trickState.roomId;
@@ -343,34 +344,34 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
       const nextIdx = (currentIdx + 1) % trickState.playerOrder.length;
       trickState.currentTurn = trickState.playerOrder[nextIdx];
 
-      io.to(trickState.roomId).emit('turn-advanced', {
+      io.to(trickState.roomId).emit(EVENTS.TURN_ADVANCED, {
         currentTurn: trickState.currentTurn,
       });
     }
   });
 
-  socket.on('undo-play', (payload: { gameId: string }) => {
+  socket.on(EVENTS.UNDO_PLAY, (payload: { gameId: string }) => {
     const { gameId } = payload;
 
     const trickState = trickStates.get(gameId);
     if (!trickState) {
-      socket.emit('play-error', { message: 'No active trick' });
+      socket.emit(EVENTS.PLAY_ERROR, { message: 'No active trick' });
       return;
     }
 
     const player = getPlayerBySocketId(socket.id);
     if (!player) {
-      socket.emit('play-error', { message: 'Player not found' });
+      socket.emit(EVENTS.PLAY_ERROR, { message: 'Player not found' });
       return;
     }
 
     if (!trickState.plays.has(player.player_id)) {
-      socket.emit('play-error', { message: 'You have not played yet' });
+      socket.emit(EVENTS.PLAY_ERROR, { message: 'You have not played yet' });
       return;
     }
 
     if (trickState.committed.has(player.player_id)) {
-      socket.emit('play-error', { message: 'Your play is final — a later player has already played' });
+      socket.emit(EVENTS.PLAY_ERROR, { message: 'Your play is final — a later player has already played' });
       return;
     }
 
@@ -389,7 +390,7 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
 
     const dbPlayer = getPlayerById(player.player_id);
     if (!dbPlayer) {
-      socket.emit('play-error', { message: 'Player not found in DB' });
+      socket.emit(EVENTS.PLAY_ERROR, { message: 'Player not found in DB' });
       return;
     }
     const currentHand = parseHand(dbPlayer);
@@ -403,7 +404,7 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
 
     trickState.currentTurn = player.player_id;
 
-    io.to(trickState.roomId).emit('play-undone', {
+    io.to(trickState.roomId).emit(EVENTS.PLAY_UNDONE, {
       playerId: player.player_id,
       cards: cardsToReturn,
       trickUndone: !!pending,

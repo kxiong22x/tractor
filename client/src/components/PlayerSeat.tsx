@@ -105,7 +105,7 @@ export default function PlayerSeat({ player, position, isCurrentPlayer, isRoundK
               transition: 'outline 0.2s',
             }}
           >
-            <div style={{ fontWeight: 'bold', fontSize: `${0.875 * cardScale}rem` }}>{player.display_name} {isRoundKing && '\ud83d\udc51'}</div>
+            <div style={{ fontWeight: 'bold', fontSize: `${0.875 * cardScale}rem` }}>{player.displayName} {isRoundKing && '\ud83d\udc51'}</div>
             {rank != null && (
               <div style={{ fontSize: `${0.6875 * cardScale}rem`, opacity: 0.7, marginTop: '0.0625rem' }}>Rank: {RANK_DISPLAY[rank] ?? rank}</div>
             )}

@@ -1,4 +1,5 @@
 import type { Dispatch } from 'react';
+import { EVENTS } from '../../../shared/events';
 import type { Socket } from 'socket.io-client';
 import type { GameState, GameAction, GamePlayer } from '../gameState';
 import { parseCard } from '../utils/cards';
@@ -66,7 +67,7 @@ export function useGameActions({ state, dispatch, socket, myHand, currentPlayer 
   function isClickableInTrickPhase(_card: string): boolean {
     if (phase !== 'trick') return false;
     if (!currentPlayer) return false;
-    if (currentTurn !== currentPlayer.player_id) return false;
+    if (currentTurn !== currentPlayer.playerId) return false;
     if (trickComplete) return false;
     return true;
   }
@@ -80,7 +81,7 @@ export function useGameActions({ state, dispatch, socket, myHand, currentPlayer 
   }
 
   function handleFinishKitty() {
-    socket.emit('finish-kitty', { gameId, kittyCards, handCards });
+    socket.emit(EVENTS.FINISH_KITTY, { gameId, kittyCards, handCards });
     dispatch({ type: 'FINISH_KITTY' });
   }
 
@@ -116,18 +117,18 @@ export function useGameActions({ state, dispatch, socket, myHand, currentPlayer 
 
   function handlePlayTrick() {
     if (stagedCards.length === 0) return;
-    socket.emit('play-cards', { gameId, cards: stagedCards });
+    socket.emit(EVENTS.PLAY_CARDS, { gameId, cards: stagedCards });
     dispatch({ type: 'CLEAR_STAGED' });
   }
 
   function handleDeclareTrump() {
     if (!canPlayDeclaration) return;
-    socket.emit('declare-trump', { gameId, card: stagedCards[0], wantPair: stagedCards.length >= 2 });
+    socket.emit(EVENTS.DECLARE_TRUMP, { gameId, card: stagedCards[0], wantPair: stagedCards.length >= 2 });
     dispatch({ type: 'CLEAR_STAGED' });
   }
 
   function handleReinforce() {
-    socket.emit('reinforce-trump', { gameId });
+    socket.emit(EVENTS.REINFORCE_TRUMP, { gameId });
     dispatch({ type: 'CLEAR_REINFORCE' });
     dispatch({ type: 'CLEAR_STAGED' });
   }
@@ -138,7 +139,7 @@ export function useGameActions({ state, dispatch, socket, myHand, currentPlayer 
   const canPlayDeclaration = stagedCards.length > 0 && (!pairRequired || stagedCards.length >= 2);
 
   // Trick phase play button logic
-  const isMyTurn = phase === 'trick' && currentPlayer && currentTurn === currentPlayer.player_id && !trickComplete;
+  const isMyTurn = phase === 'trick' && currentPlayer && currentTurn === currentPlayer.playerId && !trickComplete;
   const canPlayTrick = isMyTurn && stagedCards.length > 0;
 
   // Determine which play handler and canPlay to use
@@ -151,15 +152,15 @@ export function useGameActions({ state, dispatch, socket, myHand, currentPlayer 
 
   // Pick up kitty button logic
   const { handInitialized, roundKingId } = state;
-  const showPickUpKitty = handInitialized && !kittyPickedUp && phase === 'declaration' && trumpSuit !== 'NA' && !!currentPlayer && currentPlayer.player_id === roundKingId;
+  const showPickUpKitty = handInitialized && !kittyPickedUp && phase === 'declaration' && trumpSuit !== 'NA' && !!currentPlayer && currentPlayer.playerId === roundKingId;
   function handlePickUpKitty() {
     dispatch({ type: 'PICK_UP_KITTY' });
-    socket.emit('pick-up-kitty', { gameId });
+    socket.emit(EVENTS.PICK_UP_KITTY, { gameId });
   }
 
   // Take back logic
-  const myPlayedCards = currentPlayer ? trickPlays[currentPlayer.player_id] : undefined;
-  const myOrderIdx = currentPlayer ? state.trickPlayerOrder.indexOf(currentPlayer.player_id) : -1;
+  const myPlayedCards = currentPlayer ? trickPlays[currentPlayer.playerId] : undefined;
+  const myOrderIdx = currentPlayer ? state.trickPlayerOrder.indexOf(currentPlayer.playerId) : -1;
   const nextPlayerAfterMe = myOrderIdx >= 0
     ? state.trickPlayerOrder[(myOrderIdx + 1) % state.trickPlayerOrder.length]
     : null;
@@ -169,16 +170,16 @@ export function useGameActions({ state, dispatch, socket, myHand, currentPlayer 
     && !trickComplete
     && Object.keys(trickPlays).length < state.trickPlayerOrder.length
     && nextPlayerAfterMe === currentTurn
-    && !!currentPlayer && !state.trickCommitted.includes(currentPlayer.player_id);
+    && !!currentPlayer && !state.trickCommitted.includes(currentPlayer.playerId);
 
   const isLastPlayer = state.trickPlayerOrder.length > 0
-    && currentPlayer?.player_id === state.trickPlayerOrder[state.trickPlayerOrder.length - 1];
+    && currentPlayer?.playerId === state.trickPlayerOrder[state.trickPlayerOrder.length - 1];
   const canUndoLast = phase === 'trick' && !!trickComplete && isLastPlayer && !!myPlayedCards;
 
   const canUndoPlay = canUndoNormal || canUndoLast;
 
   function handleUndoPlay() {
-    socket.emit('undo-play', { gameId });
+    socket.emit(EVENTS.UNDO_PLAY, { gameId });
   }
 
   // Buttons shown inline next to the player name tag

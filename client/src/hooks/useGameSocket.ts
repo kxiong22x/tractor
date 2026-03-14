@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
+import { EVENTS } from '../../../shared/events';
 import type { MutableRefObject, Dispatch } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import type { Socket } from 'socket.io-client';
 import type { GamePlayer, GameAction, RoundResult } from '../gameState';
+import { mapGamePlayer, mapPlayer, type RawPlayer } from '../types';
 import { parseCard } from '../utils/cards';
 import { cardsDealtForPlayer } from '../utils/seats';
 
@@ -53,7 +55,7 @@ export function useGameSocket({
     };
 
     const onCardsPlayed = (data: { playerId: string; cards: string[] }) => {
-      dispatch({ type: 'CARDS_PLAYED', ...data, currentPlayerId: currentPlayer?.player_id });
+      dispatch({ type: 'CARDS_PLAYED', ...data, currentPlayerId: currentPlayer?.playerId });
     };
 
     const onTurnAdvanced = (data: { currentTurn: string }) => {
@@ -83,13 +85,13 @@ export function useGameSocket({
 
     const onGameStarted = (data: {
       gameId: string;
-      players: GamePlayer[];
+      players: Array<RawPlayer & { hand: string[] }>;
       trumpNumber: string;
       trumpSuit: string;
       roundKingId: string | null;
       roundNumber?: number;
     }) => {
-      dispatch({ type: 'GAME_STARTED', ...data });
+      dispatch({ type: 'GAME_STARTED', ...data, players: data.players.map(mapGamePlayer) as GamePlayer[] });
       setRoundResult(null);
       setThrowError(null);
       setGlobalDealTick(0);
@@ -104,7 +106,7 @@ export function useGameSocket({
     };
 
     const onPlayUndone = (data: { playerId: string; cards: string[]; trickUndone: boolean; points?: Record<string, number> }) => {
-      dispatch({ type: 'PLAY_UNDONE', ...data, currentPlayerId: currentPlayer?.player_id });
+      dispatch({ type: 'PLAY_UNDONE', ...data, currentPlayerId: currentPlayer?.playerId });
     };
 
     const onGameAbandoned = () => {
@@ -115,13 +117,13 @@ export function useGameSocket({
       setDisconnectedPlayerName(data.playerName);
     };
 
-    const onPlayerReconnected = (data: { playerId: string; players: GamePlayer[] }) => {
+    const onPlayerReconnected = (data: { playerId: string; players: Array<RawPlayer & { hand: string[] }> }) => {
       setDisconnectedPlayerName(null);
-      dispatch({ type: 'UPDATE_PLAYERS', players: data.players });
+      dispatch({ type: 'UPDATE_PLAYERS', players: data.players.map(mapGamePlayer) as GamePlayer[] });
     };
 
     const onCanReinforce = (data: { targetPlayerId: string; card: string }) => {
-      if (data.targetPlayerId === currentPlayer?.player_id) {
+      if (data.targetPlayerId === currentPlayer?.playerId) {
         const { suit, rank } = parseCard(data.card);
         const matchingCards = rawHandRef.current.filter(c => {
           const p = parseCard(c);
@@ -134,26 +136,26 @@ export function useGameSocket({
     };
 
     const handlers: [string, (...args: any[]) => void][] = [
-      ['trump-declared', onTrumpDeclared],
-      ['kitty-picked-up', onKittyPickedUp],
-      ['kitty-finished', onKittyFinished],
-      ['trick-started', onTrickStarted],
-      ['cards-played', onCardsPlayed],
-      ['turn-advanced', onTurnAdvanced],
-      ['trick-complete', onTrickComplete],
-      ['play-error', onPlayError],
-      ['throw-failed', onThrowFailed],
-      ['round-over', onRoundOver],
-      ['game-started', onGameStarted],
-      ['deal-tick', onDealTick],
-      ['dealing-complete', onDealingComplete],
-      ['play-undone', onPlayUndone],
-      ['game-abandoned', onGameAbandoned],
-      ['player-disconnected', onPlayerDisconnected],
-      ['player-reconnected', onPlayerReconnected],
-      ['can-reinforce', onCanReinforce],
+      [EVENTS.TRUMP_DECLARED, onTrumpDeclared],
+      [EVENTS.KITTY_PICKED_UP, onKittyPickedUp],
+      [EVENTS.KITTY_FINISHED, onKittyFinished],
+      [EVENTS.TRICK_STARTED, onTrickStarted],
+      [EVENTS.CARDS_PLAYED, onCardsPlayed],
+      [EVENTS.TURN_ADVANCED, onTurnAdvanced],
+      [EVENTS.TRICK_COMPLETE, onTrickComplete],
+      [EVENTS.PLAY_ERROR, onPlayError],
+      [EVENTS.THROW_FAILED, onThrowFailed],
+      [EVENTS.ROUND_OVER, onRoundOver],
+      [EVENTS.GAME_STARTED, onGameStarted],
+      [EVENTS.DEAL_TICK, onDealTick],
+      [EVENTS.DEALING_COMPLETE, onDealingComplete],
+      [EVENTS.PLAY_UNDONE, onPlayUndone],
+      [EVENTS.GAME_ABANDONED, onGameAbandoned],
+      [EVENTS.PLAYER_DISCONNECTED, onPlayerDisconnected],
+      [EVENTS.PLAYER_RECONNECTED, onPlayerReconnected],
+      [EVENTS.CAN_REINFORCE, onCanReinforce],
     ];
     for (const [event, handler] of handlers) socket.on(event, handler);
     return () => { for (const [event, handler] of handlers) socket.off(event, handler); };
-  }, [socket, currentPlayer?.player_id]);
+  }, [socket, currentPlayer?.playerId]);
 }
