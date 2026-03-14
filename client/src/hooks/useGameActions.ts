@@ -14,7 +14,7 @@ interface UseGameActionsParams {
 export function useGameActions({ state, dispatch, socket, myHand, currentPlayer }: UseGameActionsParams) {
   const kittySize = state.players.length === 6 ? 6 : 8;
   const {
-    gameId, phase, trumpSuit, trumpIsPair, trumpNumber, trumpDeclarerId,
+    gameId, phase, trumpSuit, trumpIsPair, trumpNumber,
     kittyPickedUp, kittyCards, handCards, stagedCards,
     currentTurn, trickPlays, trickComplete, canReinforce,
   } = state;
