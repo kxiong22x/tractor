@@ -33,6 +33,8 @@ db.exec(`
     trump_suit TEXT DEFAULT 'NA',
     trump_declarer TEXT,
     trump_count INTEGER DEFAULT 0,
+    phase TEXT DEFAULT 'dealing',
+    king_from_declaration INTEGER DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE CASCADE
   );
@@ -60,6 +62,12 @@ if (!gameCols.some((c) => c.name === 'round_king')) {
 }
 if (!gameCols.some((c) => c.name === 'round_number')) {
   db.exec("ALTER TABLE games ADD COLUMN round_number INTEGER DEFAULT 1");
+}
+if (!gameCols.some((c) => c.name === 'phase')) {
+  db.exec("ALTER TABLE games ADD COLUMN phase TEXT DEFAULT 'dealing'");
+}
+if (!gameCols.some((c) => c.name === 'king_from_declaration')) {
+  db.exec("ALTER TABLE games ADD COLUMN king_from_declaration INTEGER DEFAULT 0");
 }
 
 export default db;

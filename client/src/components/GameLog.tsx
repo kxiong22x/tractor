@@ -1,6 +1,18 @@
 import { useRef, useEffect, useState } from 'react';
-import { type LogEntry, CardSpan } from '../utils/log';
-export type { LogEntry };
+import { parseCard, getDisplayRank, getSuitSymbol, isRed } from '../utils/cards';
+
+export type LogEntry =
+  | { type: 'trick'; trickNum: number }
+  | { type: 'play'; playerName: string; cards: string[] }
+  | { type: 'winner'; playerName: string }
+  | { type: 'declare'; playerName: string; cards: string[] }
+  | { type: 'undo'; playerName: string };
+
+function CardSpan({ card }: { card: string }) {
+  const { suit, rank } = parseCard(card);
+  const text = `${getDisplayRank(suit, rank)}${getSuitSymbol(suit)}`;
+  return <span style={isRed(suit, rank) ? { color: '#c00' } : undefined}>{text}</span>;
+}
 
 interface GameLogProps {
   log: LogEntry[];

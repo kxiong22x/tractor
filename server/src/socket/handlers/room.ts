@@ -1,10 +1,10 @@
 import { Server, Socket } from 'socket.io';
-import { getRoom, removeRoom } from '../../room.queries';
-import { addPlayer, removePlayerBySocketId, getPlayersInRoom, getPlayerCountInRoom, getPlayerBySocketId, removePlayer, setPlayerDisconnected, setPlayerReconnected, getDisconnectedPlayerByName, updatePlayerRank } from '../../player.queries';
-import { getGameByRoomId } from '../../game.queries';
+import { getRoom, removeRoom } from '../../db/room.queries';
+import { addPlayer, removePlayerBySocketId, getPlayersInRoom, getPlayerCountInRoom, getPlayerBySocketId, setPlayerDisconnected, setPlayerReconnected, getDisconnectedPlayerByName, updatePlayerRank } from '../../db/player.queries';
+import { getGameByRoomId } from '../../db/game.queries';
 import { JoinRoomPayload } from '../../types';
-import { MAX_PLAYERS } from '../../constants';
-import { trickStates, pendingNextTrick, pendingNextKing, dealingIntervals, frozenGames, dealingTicks, kittyPickedUpGames, pendingRoundResults } from '../state';
+import { MAX_PLAYERS } from '../../game/constants';
+import { trickStates, pendingNextTrick, pendingNextKing, dealingIntervals, dealingTicks, pendingRoundResults } from '../state';
 import { startDealing } from './game';
 import { startTrick } from './trick';
 
@@ -26,7 +26,6 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
         const gameId = game.game_id;
         setPlayerReconnected(disconnectedPlayer.player_id, socket.id);
         socket.join(roomId);
-        frozenGames.delete(gameId);
 
         const myHand = JSON.parse(disconnectedPlayer.hand || '[]');
         const players = getPlayersInRoom(roomId).map(p => ({
@@ -81,15 +80,14 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
           });
         } else {
           const roundResult = pendingRoundResults.get(gameId);
-          const isKittyPhase = kittyPickedUpGames.has(gameId);
-          const kittyCards = isKittyPhase && disconnectedPlayer.player_id === game.round_king
+          const kittyCards = game.phase === 'kitty' && disconnectedPlayer.player_id === game.round_king
             ? JSON.parse(game.kitty as string)
             : undefined;
           socket.emit('rejoin-success', {
             players,
             game,
             myHand,
-            phase: roundResult ? 'round-over' : isKittyPhase ? 'kitty' : 'declaration',
+            phase: roundResult ? 'round-over' : game.phase,
             kittyCards,
             roundResult,
             currentDealTick: 0,
@@ -162,19 +160,10 @@ function handleDisconnect(io: Server, socket: Socket) {
   const gameId = game.game_id;
 
   if (dealingIntervals.has(gameId)) {
-    // DEALING PHASE freeze 
+    // DEALING PHASE freeze
     setPlayerDisconnected(socket.id);
     clearInterval(dealingIntervals.get(gameId)!);
     dealingIntervals.delete(gameId);
-    frozenGames.set(gameId, player.player_id);
-    io.to(roomId).emit('player-disconnected', {
-      playerId: player.player_id,
-      playerName: player.display_name,
-    });
-  } else if (!trickStates.has(gameId) && game.trump_suit !== 'NA') {
-    // KITTY PHASE freeze
-    setPlayerDisconnected(socket.id);
-    frozenGames.set(gameId, player.player_id);
     io.to(roomId).emit('player-disconnected', {
       playerId: player.player_id,
       playerName: player.display_name,
@@ -193,14 +182,13 @@ function handleDisconnect(io: Server, socket: Socket) {
       // the reconnect handler to restart the timer.
     }
 
-    frozenGames.set(gameId, player.player_id);
     io.to(roomId).emit('player-disconnected', {
       playerId: player.player_id,
       playerName: player.display_name,
     });
   } else {
+    // DECLARATION / KITTY / ROUND-OVER freeze
     setPlayerDisconnected(socket.id);
-    frozenGames.set(gameId, player.player_id);
     io.to(roomId).emit('player-disconnected', {
       playerId: player.player_id,
       playerName: player.display_name,

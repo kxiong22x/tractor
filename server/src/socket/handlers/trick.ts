@@ -1,10 +1,10 @@
 import { Server, Socket } from 'socket.io';
-import { getPlayerBySocketId, getPlayerById, addPointsToPlayer, getRoundPoints, getPlayersInRoom, updatePlayerRank, updatePlayerHand } from '../../player.queries';
-import { getGame } from '../../game.queries';
-import { parseHand, cardPoints } from '../../deck';
-import { classifyPlay, validateFollow, validateThrow, determineTrickWinner } from '../../trick';
+import { getPlayerBySocketId, getPlayerById, addPointsToPlayer, getRoundPoints, getPlayersInRoom, updatePlayerRank, updatePlayerHand } from '../../db/player.queries';
+import { getGame, updateGamePhase } from '../../db/game.queries';
+import { parseHand, cardPoints } from '../../game/deck';
+import { classifyPlay, validateFollow, validateThrow, determineTrickWinner } from '../../game/trick';
 import { PlayCardsPayload, TrickState, TrumpContext } from '../../types';
-import { MAX_PLAYERS } from '../../constants';
+import { MAX_PLAYERS } from '../../game/constants';
 import { trickStates, pendingNextTrick, pendingNextKing, pendingRoundResults } from '../state';
 
 function calculateTrickPoints(plays: Map<string, string[]>): number {
@@ -311,6 +311,7 @@ export function registerTrickHandlers(io: Server, socket: Socket) {
         }
 
         pendingNextKing.set(gameId, nextKingId);
+        updateGamePhase(gameId, 'round-over');
 
         const roundResult = {
           attackingPoints,

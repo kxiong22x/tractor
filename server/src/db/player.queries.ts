@@ -1,5 +1,5 @@
 import db from './db';
-import { Player } from './types';
+import { Player } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 export function addPlayer(roomId: string, displayName: string, socketId: string, rank: number = 2): Player {
@@ -11,10 +11,6 @@ export function addPlayer(roomId: string, displayName: string, socketId: string,
   stmt.run(playerId, displayName, roomId, socketId, rank);
 
   return db.prepare('SELECT * FROM players WHERE player_id = ?').get(playerId) as Player;
-}
-
-export function removePlayer(playerId: string): void {
-  db.prepare('DELETE FROM players WHERE player_id = ?').run(playerId);
 }
 
 export function removePlayerBySocketId(socketId: string): Player | undefined {

@@ -1,11 +1,18 @@
 import { TrickState } from '../types';
 
-export const pendingNextKing = new Map<string, string>();
-
+// gameId → setInterval handle for deal-tick animation; held so it can be cancelled on disconnect
 export const dealingIntervals = new Map<string, ReturnType<typeof setInterval>>();
 
+// gameId → deal progress; kept so a reconnecting player can resume the animation mid-deal
+export const dealingTicks = new Map<string, { current: number; total: number }>();
+
+// gameId → single trump declarer info; enables override/reinforce window, cleared when window closes
+export const singleDeclarerState = new Map<string, { playerId: string; card: string }>();
+
+// gameId → live trick state; present only while a trick is in progress
 export const trickStates = new Map<string, TrickState>();
 
+// gameId → pending between-trick transition; setTimeout is paused if a player disconnects
 export const pendingNextTrick = new Map<string, {
   handle: ReturnType<typeof setTimeout>;
   winnerId: string;
@@ -15,13 +22,7 @@ export const pendingNextTrick = new Map<string, {
   rotatedOrder: string[];
 }>();
 
-// gameId → disconnected playerId (game is frozen waiting for this player)
-export const frozenGames = new Map<string, string>();
-
-// gameIds where the kitty has been picked up but not yet buried
-export const kittyPickedUpGames = new Set<string>();
-
-// gameId → round-over payload, kept until start-next-round clears it
+// gameId → round-over payload; kept so reconnecting players get results, cleared on start-next-round
 export const pendingRoundResults = new Map<string, {
   attackingPoints: number;
   defendingPoints: number;
@@ -32,5 +33,6 @@ export const pendingRoundResults = new Map<string, {
   gameOver: boolean;
 }>();
 
-// gameId → { current: number, total: number }
-export const dealingTicks = new Map<string, { current: number; total: number }>();
+// gameId → next king's playerId; set at round end, consumed when start-next-round fires
+export const pendingNextKing = new Map<string, string>();
+

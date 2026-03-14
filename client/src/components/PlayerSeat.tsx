@@ -1,7 +1,7 @@
 import type { Player } from '../types';
 import Card from './Card';
 import { RANK_DISPLAY } from '../utils/cards';
-import { positionStyles } from '../utils/player';
+import { positionStyles } from '../utils/seats';
 
 interface ActionButton {
   label: string;

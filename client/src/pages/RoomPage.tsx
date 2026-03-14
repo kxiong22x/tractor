@@ -8,7 +8,7 @@ import RoomHeader from '../components/RoomHeader';
 import { API_BASE_URL } from '../config';
 import CenteredPage from '../components/CenteredPage';
 import PrimaryButton from '../components/PrimaryButton';
-import { STARTING_RANK_OPTIONS, RANK_DISPLAY } from '../utils/cards';
+import RankSelector from '../components/RankSelector';
 
 // ── State & Action types ──────────────────────────────────────────────
 
@@ -188,25 +188,7 @@ export default function RoomPage() {
       <RoomHeader roomId={roomId!} />
       <p>You need 4 players to start.</p>
       <PlayerList players={players} />
-      <div style={{ marginTop: '1rem' }}>
-        <label style={{ marginRight: '0.5rem' }}>Your starting rank:</label>
-        <select
-          value={startingRank}
-          onChange={(e) => handleRankChange(Number(e.target.value))}
-          style={{
-            padding: '0.4rem 0.75rem',
-            fontSize: '1rem',
-            borderRadius: '0.375rem',
-            border: '0.0625rem solid black',
-            backgroundColor: 'white',
-            color: 'black',
-          }}
-        >
-          {STARTING_RANK_OPTIONS.map((r) => (
-            <option key={r} value={r}>{RANK_DISPLAY[r]}</option>
-          ))}
-        </select>
-      </div>
+      <RankSelector value={startingRank} onChange={handleRankChange} />
       {players.length >= 4 && (
         <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
           <PrimaryButton onClick={handleStartGame}>Start Game</PrimaryButton>

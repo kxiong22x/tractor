@@ -44,6 +44,8 @@ export interface Game {
   trump_suit: string;
   trump_declarer: string | null;
   trump_count: number;
+  phase: 'dealing' | 'declaration' | 'kitty' | 'trick' | 'round-over';
+  king_from_declaration: number;
   round_number: number;
   created_at: string;
 }

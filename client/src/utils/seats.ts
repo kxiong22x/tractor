@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-export type SeatPosition = 'bottom' | 'left' | 'top' | 'right' | 'top-left' | 'top-right';
+type SeatPosition = 'bottom' | 'left' | 'top' | 'right' | 'top-left' | 'top-right';
 
 export const positionStyles: Record<string, CSSProperties> = {
   top: {

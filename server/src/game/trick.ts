@@ -1,5 +1,5 @@
 import { parseCard } from './deck';
-import type { TrumpContext, PlayShape } from './types';
+import type { TrumpContext, PlayShape } from '../types';
 import { RANK_VALUES } from './constants';
 
 function groupByRank(cards: string[]): Map<string, string[]> {

@@ -1,12 +1,5 @@
 import Card from './Card';
 
-interface ActionButton {
-  label: string;
-  enabled: boolean;
-  onClick: () => void;
-  color?: string;
-}
-
 interface HandDisplayProps {
   displayHand: string[];
   stagedCards: string[];
@@ -14,7 +7,6 @@ interface HandDisplayProps {
   isDeclarable: (card: string) => boolean;
   isClickableInTrickPhase: (card: string) => boolean;
   onCardClick: (card: string) => void;
-  buttons: ActionButton[];
   trumpSuit: string;
   trumpNumber: string;
   rowSize: number;
@@ -22,7 +14,7 @@ interface HandDisplayProps {
   overlapRem: number;
 }
 
-export default function HandDisplay({ displayHand, stagedCards, isKittyPhase, isDeclarable, isClickableInTrickPhase, onCardClick, buttons, trumpSuit, trumpNumber, rowSize, cardScale, overlapRem }: HandDisplayProps) {
+export default function HandDisplay({ displayHand, stagedCards, isKittyPhase, isDeclarable, isClickableInTrickPhase, onCardClick, trumpSuit, trumpNumber, rowSize, cardScale, overlapRem }: HandDisplayProps) {
 
   const rows: string[][] = [];
   for (let i = 0; i < displayHand.length; i += rowSize) {
@@ -40,28 +32,6 @@ export default function HandDisplay({ displayHand, stagedCards, isKittyPhase, is
         width: '100%',
       }}
     >
-      {/* Action buttons above the hand */}
-      {buttons.map((btn) => (
-        <button
-          key={btn.label}
-          onClick={btn.onClick}
-          disabled={!btn.enabled}
-          style={{
-            padding: '0.5rem 1.5rem',
-            fontSize: '0.9375rem',
-            fontWeight: 'bold',
-            backgroundColor: btn.enabled ? (btn.color ?? '#4CAF50') : '#888',
-            color: 'white',
-            border: 'none',
-            borderRadius: '0.5rem',
-            cursor: btn.enabled ? 'pointer' : 'not-allowed',
-            opacity: btn.enabled ? 1 : 0.6,
-          }}
-        >
-          {btn.label}
-        </button>
-      ))}
-
       {rows.map((rowCards, rowIdx) => (
         <div
           key={`hand-row-${rowIdx}`}

@@ -1,11 +1,11 @@
 import { Server, Socket } from 'socket.io';
-import { getPlayerBySocketId, getPlayersInRoom, updatePlayerHand } from '../../player.queries';
-import { getGame, updateTrumpDeclaration, updateRoundKing, updateKitty } from '../../game.queries';
-import { parseCard, parseHand, getKittySize } from '../../deck';
+import { getPlayerBySocketId, getPlayersInRoom, updatePlayerHand } from '../../db/player.queries';
+import { getGame, updateTrumpDeclaration, updateRoundKing, updateKitty, updateGamePhase, updateKingFromDeclaration } from '../../db/game.queries';
+import { parseCard, parseHand, getKittySize } from '../../game/deck';
 import { DeclareTrumpPayload } from '../../types';
-import { MAX_PLAYERS } from '../../constants';
+import { MAX_PLAYERS } from '../../game/constants';
 import { startTrick } from './trick';
-import { kittyPickedUpGames, trickStates } from '../state';
+import { trickStates, singleDeclarerState } from '../state';
 
 export function registerTrumpHandlers(io: Server, socket: Socket) {
   socket.on('declare-trump', (payload: DeclareTrumpPayload) => {
@@ -17,7 +17,7 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
       return;
     }
 
-    if (kittyPickedUpGames.has(gameId)) {
+    if (game.phase === 'kitty') {
       socket.emit('room-error', { message: 'Trump declaration is not allowed after the kitty has been picked up' });
       return;
     }
@@ -50,14 +50,17 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
       }
       const jokerTrumpSuit = rank === 'B' ? 'BJ' : 'SJ';
       updateTrumpDeclaration(gameId, jokerTrumpSuit, player.player_id, 2);
-      if (kingUnassigned) {
+      singleDeclarerState.delete(gameId);
+      const jokerBecomesKing = kingUnassigned || game.king_from_declaration === 1;
+      if (jokerBecomesKing) {
         updateRoundKing(gameId, player.player_id);
+        updateKingFromDeclaration(gameId, false);
       }
       io.to(game.room_id).emit('trump-declared', {
         trumpSuit: jokerTrumpSuit,
         declarerId: player.player_id,
         isPair: true,
-        roundKingId: kingUnassigned ? player.player_id : game.round_king,
+        roundKingId: jokerBecomesKing ? player.player_id : game.round_king,
       });
       return;
     }
@@ -92,6 +95,7 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
         updateTrumpDeclaration(gameId, suit, player.player_id, 2);
         if (kingUnassigned) {
           updateRoundKing(gameId, player.player_id);
+          updateKingFromDeclaration(gameId, true);
         }
         io.to(game.room_id).emit('trump-declared', {
           trumpSuit: suit,
@@ -101,8 +105,10 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
         });
       } else {
         updateTrumpDeclaration(gameId, suit, player.player_id, 1);
+        singleDeclarerState.set(gameId, { playerId: player.player_id, card });
         if (kingUnassigned) {
           updateRoundKing(gameId, player.player_id);
+          updateKingFromDeclaration(gameId, true);
         }
         io.to(game.room_id).emit('trump-declared', {
           trumpSuit: suit,
@@ -118,18 +124,91 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
           message: isReinforce ? 'You need a pair to reinforce' : 'You need a pair to override the current declaration',
         });
       } else {
+        const prevSingleDeclarer = singleDeclarerState.get(gameId);
+        const isOverride = prevSingleDeclarer && player.player_id !== prevSingleDeclarer.playerId;
         updateTrumpDeclaration(gameId, suit, player.player_id, 2);
-        if (kingUnassigned) {
+        if (!isOverride) {
+          // Self-reinforcement or no prior single state: window is closed
+          singleDeclarerState.delete(gameId);
+        }
+        const overriderBecomesKing = kingUnassigned || (!!isOverride && game.king_from_declaration === 1);
+        if (overriderBecomesKing) {
           updateRoundKing(gameId, player.player_id);
+          if (kingUnassigned) updateKingFromDeclaration(gameId, true);
         }
         io.to(game.room_id).emit('trump-declared', {
           trumpSuit: suit,
           declarerId: player.player_id,
           isPair: true,
-          roundKingId: kingUnassigned ? player.player_id : game.round_king,
+          roundKingId: overriderBecomesKing ? player.player_id : game.round_king,
         });
+        if (isOverride) {
+          io.to(game.room_id).emit('can-reinforce', {
+            targetPlayerId: prevSingleDeclarer!.playerId,
+            card: prevSingleDeclarer!.card,
+          });
+        }
       }
     }
+  });
+
+  socket.on('reinforce-trump', (payload: { gameId: string }) => {
+    const { gameId } = payload;
+
+    const game = getGame(gameId);
+    if (!game) {
+      socket.emit('room-error', { message: 'Game not found' });
+      return;
+    }
+
+    if (game.phase === 'kitty') {
+      socket.emit('room-error', { message: 'Cannot reinforce after the kitty has been picked up' });
+      return;
+    }
+
+    if (game.trump_count !== 2 || game.trump_suit === 'BJ' || game.trump_suit === 'SJ') {
+      socket.emit('room-error', { message: 'Cannot reinforce at this time' });
+      return;
+    }
+
+    const prevSingleDeclarer = singleDeclarerState.get(gameId);
+    if (!prevSingleDeclarer) {
+      socket.emit('room-error', { message: 'No single declaration to reinforce' });
+      return;
+    }
+
+    const player = getPlayerBySocketId(socket.id);
+    if (!player || player.player_id !== prevSingleDeclarer.playerId) {
+      socket.emit('room-error', { message: 'Only the original single declarer can reinforce' });
+      return;
+    }
+
+    const { suit, rank } = parseCard(prevSingleDeclarer.card);
+    const hand = parseHand(player);
+    const matchingCards = hand.filter((c) => {
+      const parsed = parseCard(c);
+      return parsed.suit === suit && parsed.rank === rank;
+    });
+
+    if (matchingCards.length < 2) {
+      socket.emit('room-error', { message: 'You need a pair to reinforce' });
+      return;
+    }
+
+    updateTrumpDeclaration(gameId, suit, player.player_id, 2);
+    singleDeclarerState.delete(gameId);
+
+    const reinforcerBecomesKing = game.king_from_declaration === 1;
+    if (reinforcerBecomesKing) {
+      updateRoundKing(gameId, player.player_id);
+    }
+
+    io.to(game.room_id).emit('trump-declared', {
+      trumpSuit: suit,
+      declarerId: player.player_id,
+      isPair: true,
+      roundKingId: reinforcerBecomesKing ? player.player_id : game.round_king,
+    });
   });
 
   socket.on('pick-up-kitty', (payload: { gameId: string }) => {
@@ -154,7 +233,9 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
 
     const kittyCards: string[] = JSON.parse(game.kitty as string);
 
-    kittyPickedUpGames.add(gameId);
+    updateGamePhase(gameId, 'kitty');
+    singleDeclarerState.delete(gameId);
+    updateKingFromDeclaration(gameId, false);
     socket.emit('kitty-picked-up', { kittyCards });
     socket.to(game.room_id).emit('kitty-picked-up', {});
   });
@@ -184,7 +265,7 @@ export function registerTrumpHandlers(io: Server, socket: Socket) {
     updateKitty(gameId, kittyCards);
     updatePlayerHand(player.player_id, handCards);
 
-    kittyPickedUpGames.delete(gameId);
+    updateGamePhase(gameId, 'trick');
     io.to(game.room_id).emit('kitty-finished', {});
 
     const kingIndex = players.findIndex(p => p.player_id === game.round_king);

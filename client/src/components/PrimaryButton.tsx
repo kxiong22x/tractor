@@ -1,4 +1,9 @@
-import { PRIMARY_BUTTON_SIZE_STYLES } from '../utils/primaryButton';
+import type { CSSProperties } from 'react';
+
+const sizeStyles: Record<'large' | 'small', CSSProperties> = {
+  large: { padding: '0.75rem 2rem', fontSize: '1.125rem', borderRadius: '0.5rem' },
+  small: { padding: '0.375rem 1rem', borderRadius: '0.375rem' },
+};
 
 interface PrimaryButtonProps {
   onClick: () => void;
@@ -15,7 +20,7 @@ export default function PrimaryButton({ onClick, children, size = 'large' }: Pri
         border: 'none',
         backgroundColor: '#f7892e',
         color: 'white',
-        ...PRIMARY_BUTTON_SIZE_STYLES[size],
+        ...sizeStyles[size],
       }}
     >
       {children}

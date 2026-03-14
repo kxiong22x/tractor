@@ -1,8 +1,8 @@
 import { Server, Socket } from 'socket.io';
-import { getPlayersInRoom, resetRoundPoints, getPlayerRank, updatePlayerHand } from '../../player.queries';
-import { createGame, getGame, updateKitty, resetGameForNewRound } from '../../game.queries';
-import { dealCards } from '../../deck';
-import { MAX_PLAYERS, MIN_PLAYERS_TO_START } from '../../constants';
+import { getPlayersInRoom, resetRoundPoints, getPlayerRank, updatePlayerHand } from '../../db/player.queries';
+import { createGame, getGame, updateKitty, resetGameForNewRound, updateGamePhase } from '../../db/game.queries';
+import { dealCards } from '../../game/deck';
+import { MAX_PLAYERS, MIN_PLAYERS_TO_START } from '../../game/constants';
 import { dealingIntervals, pendingNextKing, dealingTicks, pendingRoundResults } from '../state';
 import { startTrick } from './trick';
 
@@ -19,6 +19,7 @@ export function startDealing(io: Server, gameId: string, roomId: string, totalTi
       clearInterval(interval);
       dealingIntervals.delete(gameId);
       dealingTicks.delete(gameId);
+      updateGamePhase(gameId, 'declaration');
       io.to(roomId).emit('dealing-complete');
     }
   }, 500);

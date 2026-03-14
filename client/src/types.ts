@@ -7,9 +7,3 @@ export interface Player {
   round_points: number;
   joined_at: string;
 }
-
-export interface Room {
-  room_id: string;
-  url: string;
-  creation_time: string;
-}

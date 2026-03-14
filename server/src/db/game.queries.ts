@@ -1,5 +1,5 @@
 import db from './db';
-import { Game } from './types';
+import { Game } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 export function createGame(roomId: string, kitty: string[], roundKing: string | null, trumpNumber: string): Game {
@@ -35,9 +35,18 @@ export function updateKitty(gameId: string, kitty: string[]): void {
   db.prepare('UPDATE games SET kitty = ? WHERE game_id = ?').run(JSON.stringify(kitty), gameId);
 }
 
+export function updateGamePhase(gameId: string, phase: string): void {
+  db.prepare('UPDATE games SET phase = ? WHERE game_id = ?').run(phase, gameId);
+}
+
+export function updateKingFromDeclaration(gameId: string, value: boolean): void {
+  db.prepare('UPDATE games SET king_from_declaration = ? WHERE game_id = ?').run(value ? 1 : 0, gameId);
+}
+
 export function resetGameForNewRound(gameId: string, trumpNumber: string, roundKing: string): void {
   db.prepare(
     `UPDATE games SET kitty = '[]', trump_suit = 'NA', trump_declarer = NULL, trump_count = 0,
+     phase = 'dealing', king_from_declaration = 0,
      round_number = round_number + 1, round_king = ?, trump_number = ? WHERE game_id = ?`
   ).run(roundKing, trumpNumber, gameId);
 }
