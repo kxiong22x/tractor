@@ -1,11 +1,11 @@
 import { useEffect, type RefObject } from 'react';
 import { parseCard } from '../utils/cards';
-import type { GamePlayer } from '../gameState';
+import type { GameAction, GamePlayer } from '../gameState';
 
 interface ReconnectInitParams {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   locationState: any;
-  dispatch: (action: { type: string; [key: string]: unknown }) => void;
+  dispatch: (action: GameAction) => void;
   rawHandRef: RefObject<string[]>;
   currentPlayer: GamePlayer | null;
 }

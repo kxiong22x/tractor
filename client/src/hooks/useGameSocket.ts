@@ -4,7 +4,7 @@ import type { MutableRefObject, Dispatch } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import type { Socket } from 'socket.io-client';
 import type { GamePlayer, GameAction, RoundResult } from '../gameState';
-import { mapGamePlayer, mapPlayer, type RawPlayer } from '../types';
+import { mapGamePlayer, type RawPlayer } from '../types';
 import { parseCard } from '../utils/cards';
 import { cardsDealtForPlayer } from '../utils/seats';
 

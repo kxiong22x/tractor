@@ -57,7 +57,7 @@ export default function GamePage() {
 
   const [state, dispatch] = useReducer(gameReducer, location.state, buildInitialState);
   const {
-    players, gameId, trumpNumber, trumpSuit, trumpIsPair, declarationHistory,
+    players, gameId, trumpNumber, trumpSuit, declarationHistory,
     roundKingId, kittyPickedUp, stagedCards, kittyCards, phase,
     handCards, handInitialized,
     currentTurn, trickPlays,
