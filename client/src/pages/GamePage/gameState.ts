@@ -1,4 +1,4 @@
-import type { Player } from './types';
+import type { Player } from '../../types';
 import type { LogEntry } from './components/GameLog';
 
 export interface GamePlayer extends Player {

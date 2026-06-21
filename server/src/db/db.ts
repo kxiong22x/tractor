@@ -20,6 +20,7 @@ db.exec(`
     socket_id TEXT,
     hand TEXT,
     rank INTEGER DEFAULT 2,
+    round_points INTEGER DEFAULT 0,
     joined_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE CASCADE
   );
@@ -33,41 +34,12 @@ db.exec(`
     trump_suit TEXT DEFAULT 'NA',
     trump_declarer TEXT,
     trump_count INTEGER DEFAULT 0,
+    round_number INTEGER DEFAULT 1,
     phase TEXT DEFAULT 'dealing',
     king_from_declaration INTEGER DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE CASCADE
   );
 `);
-
-// Migrations for existing DBs
-const playerCols = db.prepare("PRAGMA table_info(players)").all() as { name: string }[];
-if (!playerCols.some((c) => c.name === 'hand')) {
-  db.exec('ALTER TABLE players ADD COLUMN hand TEXT');
-}
-if (!playerCols.some((c) => c.name === 'rank')) {
-  db.exec('ALTER TABLE players ADD COLUMN rank INTEGER DEFAULT 2');
-}
-if (!playerCols.some((c) => c.name === 'round_points')) {
-  db.exec('ALTER TABLE players ADD COLUMN round_points INTEGER DEFAULT 0');
-}
-
-const gameCols = db.prepare("PRAGMA table_info(games)").all() as { name: string }[];
-if (!gameCols.some((c) => c.name === 'round_king')) {
-  db.exec("ALTER TABLE games ADD COLUMN round_king TEXT");
-  db.exec("ALTER TABLE games ADD COLUMN trump_number TEXT DEFAULT '2'");
-  db.exec("ALTER TABLE games ADD COLUMN trump_suit TEXT DEFAULT 'NA'");
-  db.exec("ALTER TABLE games ADD COLUMN trump_declarer TEXT");
-  db.exec("ALTER TABLE games ADD COLUMN trump_count INTEGER DEFAULT 0");
-}
-if (!gameCols.some((c) => c.name === 'round_number')) {
-  db.exec("ALTER TABLE games ADD COLUMN round_number INTEGER DEFAULT 1");
-}
-if (!gameCols.some((c) => c.name === 'phase')) {
-  db.exec("ALTER TABLE games ADD COLUMN phase TEXT DEFAULT 'dealing'");
-}
-if (!gameCols.some((c) => c.name === 'king_from_declaration')) {
-  db.exec("ALTER TABLE games ADD COLUMN king_from_declaration INTEGER DEFAULT 0");
-}
 
 export default db;
