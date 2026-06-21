@@ -1,4 +1,4 @@
-import { parseCard, isTrumpCard, getDisplayRank, getSuitSymbol, isRed, SMALL_SCALE, MINI_SCALE, CARD_WIDTH_REM } from '../../utils/cards';
+import { parseCard, isTrumpCard, getDisplayRank, getSuitSymbol, isRed, SMALL_SCALE, MINI_SCALE } from '../../utils/cards';
 import styles from './Card.module.css';
 
 interface CardProps {

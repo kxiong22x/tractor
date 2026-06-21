@@ -1,5 +1,5 @@
 import type { Player } from '../../types';
-import type { LogEntry } from './components/GameLog';
+import type { LogEntry } from '../../components/GameLog/GameLog';
 
 export interface GamePlayer extends Player {
   hand: string[];

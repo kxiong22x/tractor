@@ -8,7 +8,7 @@ import { useGameLayout } from '../../hooks/useGameLayout';
 import { useReconnectInit } from '../../hooks/useReconnectInit';
 import { useReinforceCheck } from '../../hooks/useReinforceCheck';
 import { gameReducer, buildInitialState } from './gameState';
-import type { GamePlayer, RoundResult } from './gameState';
+import type { RoundResult } from './gameState';
 import PlayerSeat from '../../components/PlayerSeat/PlayerSeat';
 import TrumpInfo from '../../components/TrumpInfo/TrumpInfo';
 import KittyArea from '../../components/KittyArea/KittyArea';
