@@ -48,8 +48,10 @@ export function sortHand(cards: string[], trumpNum: string, trumpSuit: string): 
       };
       const tierDiff = trumpTier(ca.suit, ca.rank) - trumpTier(cb.suit, cb.rank);
       if (tierDiff !== 0) return tierDiff;
-      // Within same tier: sort by rank
-      return RANK_ORDER[ca.rank] - RANK_ORDER[cb.rank];
+      // Within same tier: sort by rank, then suit so equal-rank cards group together
+      const rankDiff = RANK_ORDER[ca.rank] - RANK_ORDER[cb.rank];
+      if (rankDiff !== 0) return rankDiff;
+      return SUIT_ORDER[ca.suit] - SUIT_ORDER[cb.suit];
     }
 
     // Non-trump: sort by suit then rank
