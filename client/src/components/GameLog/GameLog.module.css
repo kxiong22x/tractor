@@ -1,0 +1,111 @@
+.gameLog {
+  display: flex;
+  flex-shrink: 0;
+  height: 100vh;
+}
+
+.panel {
+  overflow: hidden;
+  transition: width 250ms ease;
+  height: 100vh;
+  background-color: #f6f6f6;
+  color: #222;
+  font-family: monospace;
+  font-size: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.header {
+  font-weight: bold;
+  font-size: 0.8rem;
+  border-bottom: 1px solid #ccc;
+  padding: 0.5rem 0.4rem 0.25rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  cursor: pointer;
+  color: #888;
+  font-size: 0.9rem;
+  padding: 0 0 0 0.25rem;
+  line-height: 1;
+}
+
+.closeBtn:hover {
+  filter: none;
+  border-color: transparent;
+}
+
+.body {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 0.25rem 0.4rem;
+}
+
+.divider {
+  border: none;
+  border-top: 1px dashed #bbb;
+  margin: 0.4rem 0;
+}
+
+.tabWrapper {
+  width: 1rem;
+  flex-shrink: 0;
+  height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.tab {
+  width: 1rem;
+  height: 2rem;
+  background-color: #e8e8e8;
+  border: 1px solid #ccc;
+  border-radius: 0 4px 4px 0;
+  outline: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #666;
+  padding: 0;
+  font-family: monospace;
+}
+
+.tab:hover {
+  background-color: #d0d0d0;
+  filter: none;
+  border-color: #ccc;
+}
+
+.entryMuted {
+  color: var(--color-text-muted);
+}
+
+.entryMutedBold {
+  color: var(--color-text-muted);
+  font-weight: bold;
+}
+
+.entryMutedItalic {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.cardRed {
+  color: #c00;
+}

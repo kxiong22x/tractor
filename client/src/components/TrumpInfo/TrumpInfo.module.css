@@ -1,0 +1,27 @@
+.container {
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: calc(var(--cs) * 0.5rem) calc(var(--cs) * 0.875rem);
+  margin: calc(var(--cs) * 1rem) 0 0 calc(var(--cs) * 1rem);
+  border-radius: 0.5rem;
+  font-size: calc(var(--cs) * 1rem);
+  font-weight: bold;
+  display: inline-flex;
+  flex-direction: column;
+  gap: calc(var(--cs) * 0.25rem);
+  z-index: 10;
+}
+
+.trumpRow {
+  display: flex;
+  gap: calc(var(--cs) * 0.75rem);
+  align-items: center;
+}
+
+.suitRed {
+  color: #ff6b6b;
+}
+
+.points {
+  font-size: calc(var(--cs) * 0.8125rem);
+}

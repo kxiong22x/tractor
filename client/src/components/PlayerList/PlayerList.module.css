@@ -1,0 +1,21 @@
+.wrapper {
+  margin-top: 1.25rem;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.item {
+  padding: 0.5rem 1rem;
+  background-color: white;
+  color: black;
+  border: 0.0625rem solid black;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+}

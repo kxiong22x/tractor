@@ -1,0 +1,9 @@
+.kittyArea {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+}
+
+.cardWrapper {
+  cursor: pointer;
+}
