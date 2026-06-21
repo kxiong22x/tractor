@@ -3,7 +3,7 @@ import { EVENTS } from '../../../shared/events';
 import type { NavigateFunction } from 'react-router-dom';
 import type { Socket } from 'socket.io-client';
 import { mapPlayer, mapGamePlayer, type RawPlayer } from '../types';
-import type { RoomAction } from '../pages/RoomPage/RoomPage';
+import type { RoomAction } from '../pages/RoomPage/roomState';
 
 interface UseRoomSocketParams {
   socket: Socket;

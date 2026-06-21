@@ -1,6 +1,6 @@
 import { useEffect, type RefObject } from 'react';
 import { parseCard } from '../utils/cards';
-import type { GameAction, GamePlayer } from '../gameState';
+import type { GameAction, GamePlayer } from '../pages/GamePage/gameState';
 
 interface ReconnectInitParams {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

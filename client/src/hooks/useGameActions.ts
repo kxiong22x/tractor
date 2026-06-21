@@ -1,7 +1,7 @@
 import type { Dispatch } from 'react';
 import { EVENTS } from '../../../shared/events';
 import type { Socket } from 'socket.io-client';
-import type { GameState, GameAction, GamePlayer } from '../gameState';
+import type { GameState, GameAction, GamePlayer } from '../pages/GamePage/gameState';
 import { parseCard } from '../utils/cards';
 
 interface UseGameActionsParams {
@@ -12,6 +12,8 @@ interface UseGameActionsParams {
   currentPlayer: GamePlayer | null;
 }
 
+// not really a hook - just set up like one because all these functions use similar state and it's easier
+// to pass shared context in once instead of as a bunch of parameters in each function individually.
 export function useGameActions({ state, dispatch, socket, myHand, currentPlayer }: UseGameActionsParams) {
   const kittySize = state.players.length === 6 ? 6 : 8;
   const {

@@ -1,7 +1,7 @@
 import { useEffect, type Dispatch } from 'react';
 import { API_BASE_URL } from '../config';
 import { mapPlayer, type RawPlayer } from '../types';
-import type { RoomAction } from '../pages/RoomPage/RoomPage';
+import type { RoomAction } from '../pages/RoomPage/roomState';
 
 export function useRoomData(roomId: string | undefined, dispatch: Dispatch<RoomAction>) {
   useEffect(() => {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import styles from './PlayerForm.module.css';
+import PrimaryButton from '../PrimaryButton/PrimaryButton';
 
 interface PlayerFormProps {
   onJoin: (displayName: string) => void;
@@ -27,9 +28,7 @@ export default function PlayerForm({ onJoin }: PlayerFormProps) {
         maxLength={20}
         className="form-input"
       />
-      <button type="submit" className={styles.submitBtn}>
-        Join
-      </button>
+      <PrimaryButton type="submit" size="small">Join</PrimaryButton>
     </form>
   );
 }

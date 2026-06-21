@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useScrollToBottom } from '../../hooks/useScrollToBottom';
-import { parseCard, getDisplayRank, getSuitSymbol, isRed } from '../../utils/cards';
+import CardSpan from '../CardSpan/CardSpan';
 import styles from './GameLog.module.css';
 
 export type LogEntry =
@@ -9,12 +9,6 @@ export type LogEntry =
   | { type: 'winner'; playerName: string }
   | { type: 'declare'; playerName: string; cards: string[] }
   | { type: 'undo'; playerName: string };
-
-function CardSpan({ card }: { card: string }) {
-  const { suit, rank } = parseCard(card);
-  const text = `${getDisplayRank(suit, rank)}${getSuitSymbol(suit)}`;
-  return <span className={isRed(suit, rank) ? styles.cardRed : undefined}>{text}</span>;
-}
 
 interface GameLogProps {
   log: LogEntry[];

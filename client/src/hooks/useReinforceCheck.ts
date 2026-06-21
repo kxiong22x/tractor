@@ -1,5 +1,5 @@
 import { useEffect, type Dispatch } from 'react';
-import type { GameAction } from '../gameState';
+import type { GameAction } from '../pages/GamePage/gameState';
 import { cardsDealtForPlayer } from '../utils/seats';
 
 interface UseReinforceCheckParams {

@@ -2,7 +2,7 @@ import { useReducer, useState } from 'react';
 import { EVENTS } from '../../../../shared/events';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../../hooks/useSocket';
-import { type Player } from '../../types';
+import { roomReducer, initialRoomState } from './roomState';
 import PlayerForm from '../../components/PlayerForm/PlayerForm';
 import PlayerList from '../../components/PlayerList/PlayerList';
 import RoomHeader from '../../components/RoomHeader/RoomHeader';
@@ -13,49 +13,6 @@ import styles from './RoomPage.module.css';
 import { useRoomData } from '../../hooks/useRoomData';
 import { useRoomSocket } from '../../hooks/useRoomSocket';
 
-// ── State & Action types ──────────────────────────────────────────────
-
-interface RoomState {
-  joined: boolean;
-  players: Player[];
-  error: string | null;
-}
-
-export type RoomAction =
-  | { type: 'PLAYERS_LOADED'; players: Player[] }
-  | { type: 'LOAD_ERROR'; message: string }
-  | { type: 'JOINED' }
-  | { type: 'PLAYER_JOINED'; players: Player[] }
-  | { type: 'PLAYER_LEFT'; players: Player[] }
-  | { type: 'ROOM_ERROR'; message: string };
-
-// ── Reducer ───────────────────────────────────────────────────────────
-
-function roomReducer(state: RoomState, action: RoomAction): RoomState {
-  switch (action.type) {
-    case 'PLAYERS_LOADED':
-      return { ...state, players: action.players };
-    case 'LOAD_ERROR':
-      return { ...state, error: action.message };
-    case 'JOINED':
-      return { ...state, joined: true, error: null };
-    case 'PLAYER_JOINED':
-      return { ...state, players: action.players };
-    case 'PLAYER_LEFT':
-      return { ...state, players: action.players };
-    case 'ROOM_ERROR':
-      return { ...state, error: action.message };
-    default:
-      return state;
-  }
-}
-
-const initialState: RoomState = {
-  joined: false,
-  players: [],
-  error: null,
-};
-
 // ── Component ─────────────────────────────────────────────────────────
 
 export default function RoomPage() {
@@ -63,7 +20,7 @@ export default function RoomPage() {
   const navigate = useNavigate();
   const socket = useSocket();
 
-  const [state, dispatch] = useReducer(roomReducer, initialState);
+  const [state, dispatch] = useReducer(roomReducer, initialRoomState);
   const { joined, players, error } = state;
   const [startingRank, setStartingRank] = useState(2);
 
@@ -88,9 +45,7 @@ export default function RoomPage() {
     return (
       <CenteredPage>
         <h2>{error}</h2>
-        <button onClick={() => navigate('/')} className={styles.errorBtn}>
-          Back to Home
-        </button>
+        <PrimaryButton onClick={() => navigate('/')} size="small">Back to Home</PrimaryButton>
       </CenteredPage>
     );
   }

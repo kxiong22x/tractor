@@ -27,11 +27,11 @@ interface PlayerSeatProps {
   cardScale?: number;
 }
 
-const flexDirectionClass: Record<string, string> = {
-  column:         styles['seatContent--column'],
-  'column-reverse': styles['seatContent--columnReverse'],
-  'row-reverse':  styles['seatContent--rowReverse'],
-  row:            styles['seatContent--row'],
+const cardSideClass: Record<string, string> = {
+  above: styles['seatContent--column'],
+  below: styles['seatContent--columnReverse'],
+  right: styles['seatContent--rowReverse'],
+  left:  styles['seatContent--row'],
 };
 
 export default function PlayerSeat({ player, position, isCurrentPlayer, isRoundKing, declaredCards, isBeingDealt, playedCards, isCurrentTurn, rank, trumpSuit, trumpNumber, buttons, cardScale = 1 }: PlayerSeatProps) {
@@ -39,11 +39,6 @@ export default function PlayerSeat({ player, position, isCurrentPlayer, isRoundK
     : position === 'left' ? 'right'
     : position === 'right' ? 'left'
     : 'below';
-
-  const flexDirection = cardSide === 'above' ? 'column'
-    : cardSide === 'below' ? 'column-reverse'
-    : cardSide === 'right' ? 'row-reverse'
-    : 'row';
 
   const isHorizontal = cardSide === 'left' || cardSide === 'right';
 
@@ -56,7 +51,7 @@ export default function PlayerSeat({ player, position, isCurrentPlayer, isRoundK
   return (
     <div style={positionStyles[position]}>
       <div
-        className={`${styles.seatContent} ${flexDirectionClass[flexDirection]}`}
+        className={`${styles.seatContent} ${cardSideClass[cardSide]}`}
         style={{ '--cs': cardScale } as React.CSSProperties}
       >
         <div className={`${styles.playedCards} ${isHorizontal ? styles['playedCards--horizontal'] : styles['playedCards--vertical']}`}>

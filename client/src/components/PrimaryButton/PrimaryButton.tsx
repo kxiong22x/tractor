@@ -1,12 +1,13 @@
 interface PrimaryButtonProps {
-  onClick: () => void;
+  onClick?: () => void;
   children: React.ReactNode;
   size?: 'large' | 'small';
+  type?: 'button' | 'submit';
 }
 
-export default function PrimaryButton({ onClick, children, size = 'large' }: PrimaryButtonProps) {
+export default function PrimaryButton({ onClick, children, size = 'large', type = 'button' }: PrimaryButtonProps) {
   return (
-    <button onClick={onClick} className={`btn--${size}`}>
+    <button type={type} onClick={onClick} className={`btn--${size}`}>
       {children}
     </button>
   );

@@ -7,50 +7,21 @@ import { useGameActions } from '../../hooks/useGameActions';
 import { useGameLayout } from '../../hooks/useGameLayout';
 import { useReconnectInit } from '../../hooks/useReconnectInit';
 import { useReinforceCheck } from '../../hooks/useReinforceCheck';
-import { gameReducer, buildInitialState } from '../../gameState';
-import type { GamePlayer, RoundResult } from '../../gameState';
+import { gameReducer, buildInitialState } from './gameState';
+import type { GamePlayer, RoundResult } from './gameState';
 import PlayerSeat from '../../components/PlayerSeat/PlayerSeat';
 import TrumpInfo from '../../components/TrumpInfo/TrumpInfo';
 import KittyArea from '../../components/KittyArea/KittyArea';
 import RoundOverModal from '../../components/RoundOverModal/RoundOverModal';
 import PlayerDisconnectedModal from '../../components/PlayerDisconnectedModal/PlayerDisconnectedModal';
-import ThrowError from '../../components/ThrowError/ThrowError';
-import TrickCompleteOverlay from '../../components/TrickCompleteOverlay/TrickCompleteOverlay';
 import HandDisplay from '../../components/HandDisplay/HandDisplay';
 import GameLog from '../../components/GameLog/GameLog';
+import PrimaryButton from '../../components/PrimaryButton/PrimaryButton';
 import { sortHand } from '../../utils/cards';
 import { cardsDealtForPlayer, buildSeatMap } from '../../utils/seats';
 import { isMobile } from '../../utils/layout';
+import { getDeclaredCards, calcAttackingPoints } from '../../utils/game';
 import styles from './GamePage.module.css';
-
-function getDeclaredCards(
-  playerDecl: { suit: string; count: number } | undefined,
-  trumpNumber: string
-): string[] | undefined {
-  if (!playerDecl) return undefined;
-  if (playerDecl.suit === 'BJ' || playerDecl.suit === 'SJ') {
-    return [`J${playerDecl.suit[0]}-decl0`, `J${playerDecl.suit[0]}-decl1`];
-  }
-  if (playerDecl.count === 2) {
-    return [`${playerDecl.suit}${trumpNumber}-decl0`, `${playerDecl.suit}${trumpNumber}-decl1`];
-  }
-  return [`${playerDecl.suit}${trumpNumber}-decl0`];
-}
-
-function calcAttackingPoints(
-  players: GamePlayer[],
-  roundKingId: string | null,
-  playerPoints: Record<string, number>
-): number {
-  if (!roundKingId) return 0;
-  const kingIdx = players.findIndex(p => p.playerId === roundKingId);
-  if (kingIdx < 0) return 0;
-  let total = 0;
-  for (let offset = 1; offset < players.length; offset += 2) {
-    total += playerPoints[players[(kingIdx + offset) % players.length].playerId] ?? 0;
-  }
-  return total;
-}
 
 export default function GamePage() {
   const location = useLocation();
@@ -116,9 +87,7 @@ export default function GamePage() {
     return (
       <div className={styles.noGame}>
         <h2>No active game</h2>
-        <button onClick={() => navigate('/')} className={styles.noGameBtn}>
-          Back to Home
-        </button>
+        <PrimaryButton onClick={() => navigate('/')} size="small">Back to Home</PrimaryButton>
       </div>
     );
   }
@@ -212,8 +181,8 @@ export default function GamePage() {
           />
         </div>
 
-        {throwError && <ThrowError message={throwError} />}
-        {trickComplete && <TrickCompleteOverlay winnerName={trickComplete.winnerName} />}
+        {throwError && <div className="overlay-toast overlay-toast--error">{throwError}</div>}
+        {trickComplete && <div className="overlay-toast overlay-toast--trick">{trickComplete.winnerName} wins the trick!</div>}
         {roundResult && (
           <RoundOverModal
             roundResult={roundResult}
