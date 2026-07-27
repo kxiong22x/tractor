@@ -21,6 +21,7 @@ export function cardPoints(card: string): number {
   return 0;
 }
 
+/** Creates an unshuffled double deck of 108 cards (two standard 54-card decks with jokers). */
 export function createDeck(): string[] {
   const cards: string[] = [];
 
@@ -37,6 +38,7 @@ export function createDeck(): string[] {
   return cards; // 54 * 2 = 108 cards
 }
 
+/** Returns a new array with the deck cards shuffled in-place using Fisher-Yates. */
 export function shuffleDeck(deck: string[]): string[] {
   const shuffled = [...deck];
   for (let i = shuffled.length - 1; i > 0; i--) {

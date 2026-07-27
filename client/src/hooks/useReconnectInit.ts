@@ -10,6 +10,8 @@ interface ReconnectInitParams {
   currentPlayer: GamePlayer | null;
 }
 
+// Restores in-progress game state (hand, kitty, trick, reinforce window) from router location.state
+// when a player rejoins mid-game. Used by GamePage on mount after a REJOIN_SUCCESS redirect.
 export function useReconnectInit({ locationState, dispatch, rawHandRef, currentPlayer }: ReconnectInitParams) {
   useEffect(() => {
     if (locationState?.phase === 'declaration' || locationState?.phase === 'round-over') {

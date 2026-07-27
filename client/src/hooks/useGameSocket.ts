@@ -23,6 +23,8 @@ interface UseGameSocketParams {
   setDisconnectedPlayerName: (name: string | null) => void;
 }
 
+// Registers all in-game socket.io event listeners (trump, kitty, trick, dealing, round, reconnect, reinforce)
+// and tears them down on unmount. Used by GamePage as the single wiring point for server-driven game events.
 export function useGameSocket({
   socket,
   currentPlayer,

@@ -13,6 +13,8 @@ interface UseReinforceCheckParams {
   dispatch: Dispatch<GameAction>;
 }
 
+// Clears the reinforce opportunity once enough cards have been dealt to the player, preventing a stale
+// reinforce window from persisting past the valid window. Used by GamePage on every deal tick.
 export function useReinforceCheck({
   canReinforce,
   reinforceCloseAtCardCount,

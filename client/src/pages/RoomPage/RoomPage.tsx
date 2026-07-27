@@ -62,7 +62,7 @@ export default function RoomPage() {
   return (
     <CenteredPage maxWidth="31.25rem">
       <RoomHeader roomId={roomId!} />
-      <p>You need 4 players to start.</p>
+      <p>Share the room link with other players so they can join! You need 4 players to start.</p>
       <PlayerList players={players} />
       <RankSelector value={startingRank} onChange={handleRankChange} />
       {players.length >= 4 && (

@@ -2,6 +2,7 @@ import { parseCard } from './deck';
 import type { TrumpContext } from '../types';
 import { RANK_VALUES } from './constants';
 
+/** Groups cards into a map keyed by face suit+rank (e.g. "H5"), ignoring deck index. */
 export function groupByRank(cards: string[]): Map<string, string[]> {
   const groups = new Map<string, string[]>();
   for (const card of cards) {
@@ -14,6 +15,7 @@ export function groupByRank(cards: string[]): Map<string, string[]> {
   return groups;
 }
 
+/** Returns the numeric rank ordering value for a given rank string (e.g. "A" → 14). */
 export function rankValue(rank: string): number {
   return RANK_VALUES[rank] ?? 0;
 }
@@ -79,6 +81,7 @@ export function cardValue(card: string, ctx: TrumpContext): number {
   return rv > trumpRv ? rv - 1 : rv;
 }
 
+/** Returns the highest cardValue among a list of cards. */
 export function maxCardValue(cards: string[], ctx: TrumpContext): number {
   return Math.max(...cards.map(c => cardValue(c, ctx)));
 }
@@ -102,6 +105,7 @@ export function getPairValues(suitCards: string[], ctx: TrumpContext): number[] 
   return values;
 }
 
+/** Counts how many pairs of a given logical suit exist in a hand. */
 export function countPairsOfSuit(cards: string[], suit: string, ctx: TrumpContext): number {
   const suitCards = cards.filter(c => logicalSuit(c, ctx) === suit);
   const groups = new Map<string, number>();
@@ -117,6 +121,7 @@ export function countPairsOfSuit(cards: string[], suit: string, ctx: TrumpContex
   return pairs;
 }
 
+/** Finds all tractors (consecutive pairs) of a given logical suit in a hand, returning their length and starting value. */
 export function findTractorsOfSuit(cards: string[], suit: string, ctx: TrumpContext): { length: number; value: number }[] {
   const suitCards = cards.filter(c => logicalSuit(c, ctx) === suit);
 

@@ -158,6 +158,7 @@ export function throwCardCount(shape: PlayShape): number {
   return count;
 }
 
+/** Returns true if the follower's cards match the throw's structure (same tractor lengths, pair count, and single count). */
 export function throwStructureMatches(followerCards: string[], throwShape: PlayShape, ctx: TrumpContext): boolean {
   const throwComponents = throwShape.components;
   if (!throwComponents || throwComponents.length === 0) return false;

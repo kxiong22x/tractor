@@ -12,6 +12,8 @@ interface UseRoomSocketParams {
   navigate: NavigateFunction;
 }
 
+// Registers socket.io listeners for lobby events (players joining/leaving, game start, rejoin) and
+// navigates to the game page when the server signals a game has started or a rejoin succeeded. Used by RoomPage.
 export function useRoomSocket({ socket, roomId, dispatch, navigate }: UseRoomSocketParams) {
   useEffect(() => {
     const onPlayerJoined = (data: { player: RawPlayer; players: RawPlayer[] }) => {
